@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lectura · Arturo Torres</title>
+<meta name="description" content="Lectura animada de un texto de Arturo Torres.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lectura.css">
+</head>
+<body>
+<div class="lx-bg" aria-hidden="true"><span class="lx-orb lx-o1"></span><span class="lx-orb lx-o2"></span><span class="lx-orb lx-o3"></span></div>
+<div class="lx-bar" id="lx-bar" aria-hidden="true"></div>
+
+<a class="lx-back" id="lx-volver" href="./">← Volver</a>
+<button class="lx-aa" id="lx-aa" type="button" aria-pressed="false" aria-label="Cambiar tamaño de texto">Aa</button>
+
+<main>
+  <section class="lx-intro" id="intro">
+    <div class="lx-intro-in">
+      <div id="titulo-bloque"><h1>Cargando…</h1></div>
+      <p class="lx-tiempo" id="tiempo"></p>
+      <a class="lx-cue" id="lx-cue" href="#texto">Desplaza para leer ↓</a>
+    </div>
+  </section>
+
+  <article class="lx-texto" id="texto"></article>
+</main>
+
+<div class="lx-pop" id="lx-pop" role="dialog" aria-label="Nota al pie" hidden>
+  <p class="lx-pop-body" id="lx-pop-body" aria-live="polite"></p>
+  <button class="lx-pop-x" id="lx-pop-x" type="button" aria-label="Cerrar nota">×</button>
+</div>
+
+<div class="lx-lb" id="lx-lb" role="dialog" aria-modal="true" aria-label="Imagen ampliada" hidden>
+  <button class="lx-lb-x" id="lx-lb-x" type="button" aria-label="Cerrar imagen">×</button>
+  <img id="lx-lb-img" alt="">
+</div>
+
+<script src="lectura.js"></script>
+</body>
+</html>
