@@ -188,7 +188,6 @@ if(document.body.dataset.page==="home"){
   const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
   const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
   const mkBtn=(text,aria)=>{const b=document.createElement("button");b.type="button";b.textContent=text;b.setAttribute("aria-label",aria);return b;};
-  const dlLink=url=>{const a=document.createElement("a");a.className="dl";a.href=url;a.download="";a.textContent="Descargar PDF ↓";return a;};
   const iconBtn=(d,aria)=>{
     const b=document.createElement("button");b.type="button";b.setAttribute("aria-label",aria);
     const s=document.createElementNS("http://www.w3.org/2000/svg","svg");
@@ -237,7 +236,7 @@ if(document.body.dataset.page==="home"){
       const h1=document.createElement("h1"),body=document.createElement("div");
       h1.textContent=p.title;body.id="body";
       art.append(h1);
-      if(p.pdf){chrome.append(dlLink(p.pdf));art.append(body);return readPdf(p.pdf,body);}
+      if(p.pdf){art.append(body);return readPdf(p.pdf,body);}
       art.append(body);
       if(p.fromDb){body.textContent=p.summary||"";return;}
       body.innerHTML=marked.parse(await fetch(`posts/${encodeURIComponent(slug)}.md`).then(r=>r.text()));
@@ -259,8 +258,7 @@ if(document.body.dataset.page==="home"){
       b.setAttribute("aria-pressed",String(k===cur));btns.set(k,b);seg.append(b);
     });
     bar2.append(seg);
-    const dl=p.pdf?dlLink(p.pdf):null;
-    if(dl){dl.hidden=true;bar2.append(dl);}
+    const dl=null;
     chrome.append(bar2);
     /* controlador flotante (pastilla) y flechas laterales del libro */
     const CHV_L="M15 18l-6-6 6-6",CHV_R="M9 18l6-6-6-6";
