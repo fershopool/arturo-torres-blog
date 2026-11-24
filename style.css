@@ -515,7 +515,6 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
 .shelf-cover img{display:block;width:100%;aspect-ratio:551/780;object-fit:cover;border-radius:4px;box-shadow:0 16px 30px -12px #000d}
 .shelf-meta h3{margin:8px 0 0;font-size:var(--fs-h3)}
 .shelf-author{margin:10px 0 0;color:var(--red-ink);letter-spacing:.14em;text-transform:uppercase;font-size:.78rem}
-.shelf-open{display:inline-block;margin-top:14px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--red-ink);padding-bottom:2px}
 @media(prefers-reduced-motion:reduce){.spine,.shelf-card{transition:none;animation:none}}
 
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -550,3 +549,15 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
 @keyframes howPulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.7);opacity:0}}
 @keyframes howBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(-4deg)}}
 @media(prefers-reduced-motion:reduce){.how-icon::after,.how-icon svg,.spine[aria-pressed=true]{animation:none}.how-card{transition:none}}
+
+/* botón Leer: píldora con brillo y flecha que invita a pulsar */
+.shelf-open{position:relative;display:inline-flex;align-items:center;gap:10px;margin-top:16px;padding:12px 26px;min-height:44px;border-radius:999px;overflow:hidden;isolation:isolate;color:#fff;font-weight:600;text-decoration:none;background:linear-gradient(120deg,var(--red),#6b2f9e);box-shadow:0 8px 24px -8px #b3283ccc;animation:leerPulse 2.6s ease-in-out infinite;transition:transform .35s var(--ease),box-shadow .35s}
+.shelf-open::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(110deg,transparent 30%,#ffffff55 50%,transparent 70%);transform:translateX(-120%);animation:leerShine 3.2s ease-in-out infinite}
+.shelf-open .flecha{display:inline-block;animation:leerFlecha 1.4s ease-in-out infinite}
+.shelf-open:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 32px -8px #b3283cff}
+.shelf-open:active{transform:scale(.97)}
+.shelf-open:focus-visible{outline:2px solid #fff;outline-offset:3px}
+@keyframes leerPulse{0%,100%{box-shadow:0 8px 24px -8px #b3283ccc,0 0 0 0 #b3283c66}50%{box-shadow:0 8px 24px -8px #b3283ccc,0 0 0 10px #b3283c00}}
+@keyframes leerShine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@keyframes leerFlecha{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@media(prefers-reduced-motion:reduce){.shelf-open,.shelf-open::before,.shelf-open .flecha{animation:none}}

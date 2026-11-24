@@ -143,7 +143,7 @@ if(document.body.dataset.page==="home"){
       if(cur)cur.setAttribute("aria-pressed","false");
       if(cur===btn){cur=null;info.replaceChildren(el("p","shelf-hint","Elige un libro de la estantería."));return;}
       cur=btn;btn.setAttribute("aria-pressed","true");
-      const a=el("a","shelf-open","Leer →");a.href=href(p);
+      const a=el("a","shelf-open","Leer ");a.append(el("span","flecha","→"));a.href=href(p);
       const b=el("div","shelf-meta");
       if(p===l[0])b.append(el("span","shelf-badge","Último añadido"));
       b.append(el("p","date",dateTxt(p.date)),el("h3",null,p.title),el("p","shelf-author","Arturo Torres"),a);
