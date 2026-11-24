@@ -155,10 +155,16 @@ if(document.body.dataset.page==="home"){
     row.setAttribute("role","group");row.setAttribute("aria-label","Estantería de textos");
     info.id="shelf-info";info.setAttribute("aria-live","polite");
     info.append(el("p","shelf-hint","Elige un libro de la estantería."));
-    let cur=null;
+    let cur=null,tok=0;
     const show=(p,btn)=>{
       if(cur)cur.setAttribute("aria-pressed","false");
-      if(cur===btn){cur=null;info.replaceChildren(el("p","shelf-hint","Elige un libro de la estantería."));return;}
+      const tk=++tok;
+      if(cur===btn){
+        cur=null;
+        const old=info.firstElementChild,hint=()=>{const h=el("p","shelf-hint shelf-hint-in","Elige un libro de la estantería.");info.replaceChildren(h);};
+        if(old&&!reduce){old.classList.add("shelf-out");setTimeout(()=>{if(tk===tok)hint();},340);}else hint();
+        return;
+      }
       cur=btn;btn.setAttribute("aria-pressed","true");
       const a=el("a","shelf-open","Leer ");a.append(el("span","flecha","→"));a.href=href(p);
       const b=el("div","shelf-meta");
@@ -199,13 +205,6 @@ if(document.body.dataset.page==="home"){
       return;
     }
     heroCta.href=href(l[0]);
-    const pk=$("#peek");
-    if(pk){
-      pk.href=href(l[0]);pk.setAttribute("aria-label","Último añadido: "+l[0].title);
-      const pb=el("div","peek-body");
-      pb.append(el("span","peek-tag","Último añadido"),el("strong",null,l[0].title.split(":")[0].replace(/[“”"]/g,"")),el("small",null,dateTxt(l[0].date)),el("span","peek-go","Leer →"));
-      pk.replaceChildren(cover(l[0],"peek-cover"),pb);pk.hidden=false;
-    }
     const f=featured(l[0],R);
     featSlot.replaceChildren(f);reveal([f]);
     const sh=shelf(l);list.className="";list.replaceChildren(sh);reveal([sh]);
@@ -723,7 +722,7 @@ if(document.body.dataset.page==="home"){
     const art=$("#post");art.replaceChildren();
     const h=document.createElement("h1");h.textContent="Texto no encontrado";
     const pp=document.createElement("p");pp.textContent="El enlace puede estar mal escrito o el texto ya no está publicado.";
-    const back=document.createElement("a");back.href="./";back.textContent="← Volver a todos los textos";
+    const back=document.createElement("a");back.href="./";back.textContent="← Volver a mi biblioteca";
     art.append(h,pp,back);
   });
 }

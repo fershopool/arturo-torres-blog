@@ -619,3 +619,23 @@ header.site-header .wrap{padding-left:0;padding-right:0}
 
 .web sup.w{transform:translate3d(0,.55em,0) scale(.3);transform-origin:50% 100%}
 .web .cuerpo p.in sup.w{transform:none;transition:opacity .5s ease,transform .7s cubic-bezier(.3,1.6,.4,1)}
+
+/* estantería: la tarjeta sale y entra con animación */
+.shelf-out{animation:shelfOut .34s var(--ease) both}
+@keyframes shelfOut{to{opacity:0;transform:translateY(14px) scale(.97)}}
+.shelf-hint-in{animation:rise .5s var(--ease) both}
+/* menú superior: borde con brillo en movimiento y mejor ajuste en móvil */
+header .head{position:relative;max-width:100%;box-sizing:border-box}
+header .head::before{content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;padding:1px;background:conic-gradient(from var(--ang,0deg),#ffffff10,#e8677acc,#ffffff10 30%,#8a4fffcc 60%,#ffffff10);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:headSpin 7s linear infinite;pointer-events:none}
+@property --ang{syntax:"<angle>";inherits:false;initial-value:0deg}
+@keyframes headSpin{to{--ang:360deg}}
+header.site-header{padding:0 12px}
+.nav-link{position:relative}
+.nav-link[aria-current]::before{content:"";position:absolute;left:50%;bottom:5px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff}
+@media(max-width:600px){
+  header.site-header{padding:0 10px}
+  .brand-name{font-size:1.05rem}
+  .nav-link{padding:0 9px;font-size:.8rem}
+  .ig-btn{width:38px;height:38px}
+}
+@media(prefers-reduced-motion:reduce){header .head::before{animation:none}.shelf-out,.shelf-hint-in{animation:none}}
