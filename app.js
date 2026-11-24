@@ -131,10 +131,40 @@ if(document.body.dataset.page==="home"){
     b.append(el("span","sk sk-t"),el("span","sk sk-l"),el("span","sk sk-l short"));
     a.append(c,b);return a;
   };
+  /* estantería: cada texto es un lomo; al elegirlo se muestran título, fecha y autor */
+  const SPINES=[["#8f1d33","#b3283c"],["#3b2a78","#5a3fb0"],["#14224f","#233a7a"],["#6b2147","#9a3566"],["#2a2f6b","#3f4aa0"]];
+  const shelf=(l)=>{
+    const wrap=el("div","shelf"),row=el("div","shelf-row"),info=el("div","shelf-info");
+    row.setAttribute("role","group");row.setAttribute("aria-label","Estantería de textos");
+    info.id="shelf-info";info.setAttribute("aria-live","polite");
+    info.append(el("p","shelf-hint","Elige un libro de la estantería."));
+    let cur=null;
+    const show=(p,btn)=>{
+      if(cur)cur.setAttribute("aria-pressed","false");
+      if(cur===btn){cur=null;info.replaceChildren(el("p","shelf-hint","Elige un libro de la estantería."));return;}
+      cur=btn;btn.setAttribute("aria-pressed","true");
+      const a=el("a","shelf-open","Leer →");a.href=href(p);
+      const b=el("div","shelf-meta");
+      b.append(el("p","date",dateTxt(p.date)),el("h3",null,p.title),el("p","shelf-author","Arturo Torres"),a);
+      const card=el("div","shelf-card");card.append(cover(p,"shelf-cover"),b);
+      info.replaceChildren(card);
+    };
+    l.forEach((p,i)=>{
+      const h=[...p.slug].reduce((x,c)=>(x*31+c.charCodeAt(0))>>>0,7),[c1,c2]=SPINES[h%SPINES.length];
+      const s=el("button","spine");s.type="button";s.setAttribute("aria-pressed","false");s.setAttribute("aria-controls","shelf-info");
+      s.setAttribute("aria-label",`${p.title}, ${dateTxt(p.date)}, Arturo Torres`);
+      s.style.setProperty("--c1",c1);s.style.setProperty("--c2",c2);
+      s.style.setProperty("--h",(176+h%48)+"px");s.style.setProperty("--w",(46+(h>>3)%18)+"px");
+      s.append(el("span",null,p.title.split(":")[0].replace(/[“”"]/g,"")));
+      s.addEventListener("click",()=>show(p,s));
+      row.append(s);
+    });
+    wrap.append(row,info);return wrap;
+  };
   const state=(txt,tag="p")=>el(tag,"state",txt);
 
   const featSlot=$("#featured"),list=$("#list"),count=$("#count"),heroCta=$("#hero-cta");
-  list.replaceChildren(skelCard(),skelCard(),skelCard());
+  list.replaceChildren(skelCard());
   Promise.all([posts,ratingsP]).then(([l,R])=>{
     l.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
     count.textContent=`· ${l.length}`;
@@ -146,11 +176,7 @@ if(document.body.dataset.page==="home"){
     heroCta.href=href(l[0]);
     const f=featured(l[0],R);
     featSlot.replaceChildren(f);reveal([f]);
-    /* con un solo texto, el destacado ya lo muestra: no se repite en la rejilla */
-    if(l.length>1){
-      const cards=l.map((p,i)=>card(p,R,i));
-      list.replaceChildren(...cards);reveal(cards);
-    }else list.replaceChildren(state("Más textos aparecerán en esta lista."));
+    const sh=shelf(l);list.className="";list.replaceChildren(sh);reveal([sh]);
   }).catch(()=>{
     list.replaceChildren(state("No se pudieron cargar los textos. Inténtalo de nuevo más tarde."));
   });
@@ -252,7 +278,11 @@ if(document.body.dataset.page==="home"){
     const jn=document.createElement("input");jn.type="number";jn.min="1";jn.inputMode="numeric";jn.setAttribute("aria-label","Número de página");
     const jr=document.createElement("input");jr.type="range";jr.min="1";jr.step="1";jr.setAttribute("aria-label","Deslizar a página");
     jump.append(jn,jr);
-    nav.append(prev,count,next,pbar,jump);
+    const snBtn=document.createElement("button");snBtn.type="button";snBtn.className="libro-snd";
+    const snSet=()=>{snBtn.setAttribute("aria-pressed",String(soundOn));snBtn.setAttribute("aria-label",soundOn?"Silenciar sonido de página":"Activar sonido de página");snBtn.title=snBtn.getAttribute("aria-label");snBtn.textContent=soundOn?"♪":"♪̸";snBtn.style.opacity=soundOn?"1":".45";};
+    snBtn.addEventListener("click",()=>{soundOn=!soundOn;try{localStorage.setItem("libroSonido",soundOn?"1":"0");}catch(e){}snSet();});
+    nav.append(prev,count,next,snBtn,pbar,jump);
+    queueMicrotask(snSet);
 
     const stage=document.createElement("div");stage.className="fmt-stage";
     art.append(stage);
@@ -320,13 +350,98 @@ if(document.body.dataset.page==="home"){
     });
 
     /* ---- modo Hojas: libro con columnas CSS ---- */
+    /* sonido de papel: ruido filtrado sintetizado (sin archivos); silenciable y recordado */
+    let actx=null,soundOn=true;
+    try{soundOn=localStorage.getItem("libroSonido")!=="0";}catch(e){}
+    const pageSound=dir=>{
+      if(!soundOn||reduce)return;
+      try{
+        actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+        if(actx.state==="suspended")actx.resume();
+        const t=actx.currentTime,len=1.0,sr=actx.sampleRate,buf=actx.createBuffer(1,sr*len,sr),d=buf.getChannelData(0);
+        for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+        const src=actx.createBufferSource();src.buffer=buf;
+        const bp=actx.createBiquadFilter();bp.type="bandpass";bp.Q.value=.7;
+        bp.frequency.setValueAtTime(900,t);bp.frequency.exponentialRampToValueAtTime(4200,t+.35);bp.frequency.exponentialRampToValueAtTime(1800,t+.85);
+        const g=actx.createGain();
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.16,t+.12);g.gain.linearRampToValueAtTime(.09,t+.4);g.gain.linearRampToValueAtTime(.2,t+.62);g.gain.exponentialRampToValueAtTime(.001,t+.95);
+        const pan=actx.createStereoPanner?actx.createStereoPanner():null;
+        if(pan){pan.pan.setValueAtTime(dir>0?.35:-.35,t);pan.pan.linearRampToValueAtTime(dir>0?-.35:.35,t+.9);}
+        src.connect(bp);bp.connect(g);g.connect(pan||actx.destination);if(pan)pan.connect(actx.destination);
+        src.start(t);src.stop(t+len);
+      }catch(e){}
+    };
+    /* hoja que se voltea y se curva: tiras anidadas, cada una gira un poco más que la anterior */
+    let flipEnd=null;
+    const NS=8;
+    const buildFlip=()=>{
+      const {vp,cols}=book,W=vp.clientWidth,two=bookCps>1,H=two?W/2:W,R=two?W/2:0,sw=H/NS;
+      if(book.fc)book.fc.wrap.remove();
+      const mk=(parent,off,cls,w)=>{
+        const f=document.createElement("div");f.className=cls;
+        const c=cols.cloneNode(true);c.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id"));
+        c.style.cssText=`left:${-off}px;right:auto;width:${W}px;transition:none`;
+        f.append(c);parent.append(f);if(w)f.style.width=w+"px";return {f,c};
+      };
+      const wrap=document.createElement("div");wrap.className="libro-flip";wrap.setAttribute("aria-hidden","true");wrap.inert=true;
+      const box=(l,cls)=>{const d=document.createElement("div");d.className=cls;d.style.left=l+"px";d.style.width=H+"px";wrap.append(d);return d;};
+      const underR=mk(box(R,"libro-half"),R),castR=box(R,"libro-cast");
+      let underL=null,castL=null;
+      if(two){underL=mk(box(0,"libro-half"),0);castL=box(0,"libro-cast l");}
+      const strips=[];let par=wrap;
+      for(let k=0;k<NS;k++){
+        const s=document.createElement("div");s.className="libro-strip";
+        s.style.left=(k?sw:R)+"px";s.style.width=(sw+(k<NS-1?1:0))+"px";
+        const fr=mk(s,R+k*sw,"libro-face",sw+1),bk=mk(s,two?R-(k+1)*sw:0,"libro-face back",sw+1);
+        if(!two)bk.c.style.display="none";
+        par.append(s);par=s;strips.push({s,fr,bk});
+      }
+      vp.append(wrap);
+      book.fc={wrap,underR,underL,castR,castL,strips,key:W+"x"+bookCps};
+    };
+    const bookFlip=(o,n)=>{
+      const {vp,cols}=book,two=bookCps>1;
+      if(!book.fc||book.fc.key!==vp.clientWidth+"x"+bookCps)buildFlip();
+      const fc=book.fc,A=Math.min(o,n),B=Math.max(o,n),fwd=n>o,T=s=>`translate3d(${-s*bookStep}px,0,0)`;
+      fc.strips.forEach(t=>{t.fr.c.style.transform=T(A);t.bk.c.style.transform=T(B);});
+      fc.underR.c.style.transform=T(B);if(fc.underL)fc.underL.c.style.transform=T(A);
+      const showR=fwd,showL=!fwd&&two;
+      fc.underR.f.style.visibility=fc.castR.style.visibility=showR?"visible":"hidden";
+      if(fc.underL)fc.underL.f.style.visibility=fc.castL.style.visibility=showL?"visible":"hidden";
+      const dur=1100,t0=performance.now();let raf=0,ended=false;
+      const ease=p=>{const s=p*p*(3-2*p);return .5*s+.5*(p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2);};
+      const frame=p=>{
+        const q=fwd?ease(p):1-ease(p),th=-180*q,sn=Math.sin(Math.PI*q),m=.2+.55*sn;
+        fc.strips.forEach((t,k)=>{
+          const r=k?th*m/(NS-1):th*(1-m);
+          t.s.style.transform=`rotateY(${r}deg)`;
+        });
+        let acc=0;
+        fc.strips.forEach((t,k)=>{
+          acc+=k?th*m/(NS-1):th*(1-m);
+          const sh=Math.abs(Math.sin(acc*Math.PI/180));
+          t.fr.f.style.setProperty("--sh",(sh*.5).toFixed(3));t.bk.f.style.setProperty("--sh",(sh*.5).toFixed(3));
+        });
+        const c=(.8*sn).toFixed(3);fc.castR.style.opacity=c;if(fc.castL)fc.castL.style.opacity=c;
+        fc.wrap.style.setProperty("--lift",(sn*14).toFixed(1)+"px");
+      };
+      const done=()=>{
+        if(ended)return;ended=true;cancelAnimationFrame(raf);if(flipEnd===done)flipEnd=null;
+        fc.wrap.classList.remove("on");
+        cols.style.transition="none";cols.style.transform=T(n);void cols.offsetWidth;cols.style.transition="";
+      };
+      const tick=now=>{const p=Math.min(1,(now-t0)/dur);frame(p);if(p<1)raf=requestAnimationFrame(tick);else done();};
+      pageSound(fwd?1:-1);flipEnd=done;frame(0);fc.wrap.classList.add("on");raf=requestAnimationFrame(tick);setTimeout(done,dur+150);
+    };
     const bookTo=(page,anim)=>{
       if(!book)return;
       const spreads=Math.max(1,Math.ceil(bookN/bookCps));
       const s=Math.min(Math.max(0,Math.floor(page/bookCps)),spreads-1);
+      const old=Math.floor(bookPage/bookCps);
       bookPage=s*bookCps;
-      book.cols.style.transform=`translate3d(${-s*bookStep}px,0,0)`;
-      if(anim&&!reduce){book.vp.classList.remove("turning");void book.vp.offsetWidth;book.vp.classList.add("turning");}
+      if(flipEnd)flipEnd();
+      if(anim&&!reduce&&s!==old)bookFlip(old,s);
+      else book.cols.style.transform=`translate3d(${-s*bookStep}px,0,0)`;
       const p1=bookPage+1,p2=Math.min(bookN,bookPage+bookCps);
       book.foot[0].dataset.t=bookCps>1?String(p1):"";
       book.foot[1].dataset.t=bookCps>1?(p2>p1?String(p2):""):String(p1);
@@ -341,6 +456,7 @@ if(document.body.dataset.page==="home"){
     const bookLayout=()=>{
       if(!book)return;
       const {vp,cols}=book;
+      if(flipEnd)flipEnd();if(book.fc){book.fc.wrap.remove();book.fc=null;}
       cols.style.transform="none";
       const cs=getComputedStyle(cols);
       bookCps=Math.max(1,parseInt(cs.columnCount,10)||1);

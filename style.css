@@ -94,18 +94,11 @@ header.is-scrolled .head{min-height:60px}
 .hero h1{animation-delay:.12s}
 .hero .lede{animation-delay:.26s}
 .hero .cta{animation-delay:.4s}
-.mark{position:relative;display:none;place-items:center;justify-self:end;width:min(100%,340px);aspect-ratio:1}
-.mark::before{content:"";position:absolute;inset:0;border-radius:50%;border:1px dashed #e8677a4d;animation:spin 80s linear infinite}
-.mark::after{content:"";position:absolute;inset:12%;border-radius:50%;border:1px solid #ffffff1f}
-.mark span{font-family:var(--serif);font-style:italic;font-weight:400;font-size:clamp(5rem,9vw,7.5rem);line-height:1;background:linear-gradient(120deg,#f2ede4,#cbb9ff 55%,#e8677a);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-@keyframes spin{to{transform:rotate(360deg)}}
 .scroll-cue{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);display:grid;justify-items:center;width:44px;height:44px;align-content:end;color:var(--muted)}
 .scroll-cue::after{content:"";width:1px;height:30px;background:linear-gradient(var(--red-ink),transparent);animation:cue 2.4s var(--ease) infinite}
 @keyframes cue{0%{transform:scaleY(0);transform-origin:top}50%{transform:scaleY(1);transform-origin:top}51%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
 @media(min-width:900px){
   .hero{min-height:80vh}
-  .hero-grid{grid-template-columns:minmax(0,1fr) minmax(0,340px);gap:56px}
-  .mark{display:grid}
 }
 
 /* ---- secciones ---- */
@@ -298,7 +291,17 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
 .libro-vp[data-zone=next]{cursor:e-resize}
 .libro-vp::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:64px;margin-left:-32px;display:none;pointer-events:none;background:linear-gradient(90deg,transparent,#00000028 44%,#0000005c 50%,#00000028 56%,transparent)}
 .libro-vp::after{content:"";position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(90deg,#0000,#0007 50%,#0000)}
-.libro-vp.turning::after{animation:turnShade .65s ease}
+.libro-flip{position:absolute;inset:0;z-index:2;perspective:2400px;perspective-origin:50% 40%;pointer-events:none;visibility:hidden}
+.libro-flip.on{visibility:visible}
+.libro-half,.libro-strip,.libro-cast{position:absolute;top:0;bottom:0}
+.libro-half{overflow:hidden;background:var(--navy)}
+.libro-cast{background:linear-gradient(90deg,#000c,transparent 60%);opacity:0}
+.libro-cast.l{background:linear-gradient(270deg,#000c,transparent 60%)}
+.libro-strip{transform-origin:left center;transform-style:preserve-3d;will-change:transform}
+.libro-face{position:absolute;top:0;bottom:0;left:0;overflow:hidden;background:var(--navy);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.libro-face::after{content:"";position:absolute;inset:0;background:#000;opacity:var(--sh,0)}
+.libro-face.back{transform:rotateY(180deg)}
+.libro-flip .libro-cols{pointer-events:none}
 @keyframes turnShade{0%{opacity:0}35%{opacity:.85}100%{opacity:0}}
 .libro-head{position:absolute;top:14px;left:44px;right:44px;z-index:1;padding-bottom:7px;border-bottom:1px solid #ffffff17;text-align:center;color:var(--muted);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;pointer-events:none}
 .libro-head::before{content:attr(data-t)}
@@ -491,3 +494,26 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
   #comentarios .cm-skel{background:#ffffff14}
 }
 .orn-gap{margin-top:clamp(64px,10vw,112px)}
+
+/* ---- estantería ---- */
+.shelf-row{display:flex;flex-wrap:wrap;align-items:flex-end;align-content:flex-start;gap:14px 5px;padding:26px 22px 14px;min-height:254px;border-radius:14px 14px 0 0;border:1px solid #ffffff14;border-bottom:0;background:
+ repeating-linear-gradient(to bottom,transparent 0 var(--rh,254px),transparent var(--rh,254px) 0),
+ linear-gradient(180deg,#ffffff08,transparent)}
+.shelf-row{--board:linear-gradient(180deg,#6b4a2f,#3f2a19 60%,#2b1c10);position:relative}
+.shelf-row::after{content:"";position:absolute;left:0;right:0;bottom:0;height:14px;background:var(--board);box-shadow:0 14px 30px -10px #000c;border-radius:0 0 8px 8px}
+.spine{position:relative;flex:none;width:var(--w);height:var(--h);margin-bottom:0;padding:18px 0 14px;display:grid;place-items:start center;border:0;border-radius:4px 4px 1px 1px;cursor:pointer;color:#f4eee2;background:linear-gradient(90deg,#00000066,var(--c2) 14%,var(--c1) 55%,#00000055);box-shadow:inset 0 0 0 1px #ffffff1c,3px 0 8px -3px #000a;transform-origin:bottom center;transition:transform .45s var(--ease),box-shadow .45s}
+.spine::before,.spine::after{content:"";position:absolute;left:0;right:0;height:3px;background:#e8c98a;opacity:.7}
+.spine::before{top:9px}.spine::after{bottom:9px}
+.spine span{writing-mode:vertical-rl;max-height:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--serif);font-size:1.02rem;letter-spacing:.04em;line-height:1.1}
+.spine:hover{transform:translateY(-10px)}
+.spine[aria-pressed=true]{transform:translateY(-22px) rotate(-3deg);box-shadow:inset 0 0 0 1px #ffffff40,10px 14px 24px -8px #000d}
+.spine:focus-visible{outline:2px solid var(--red-ink);outline-offset:3px}
+.shelf-info{margin-top:28px;min-height:96px}
+.shelf-hint{margin:0;padding:22px;border:1px dashed #ffffff26;border-radius:16px;color:var(--muted);text-align:center}
+.shelf-card{display:flex;gap:clamp(16px,3vw,28px);align-items:center;padding:clamp(16px,3vw,26px);border-radius:20px;border:1px solid #ffffff1c;background:linear-gradient(160deg,#ffffff10,#ffffff04);animation:rise .6s var(--ease) both}
+.shelf-cover{flex:none;width:clamp(72px,16vw,110px)}
+.shelf-cover img{display:block;width:100%;aspect-ratio:551/780;object-fit:cover;border-radius:4px;box-shadow:0 16px 30px -12px #000d}
+.shelf-meta h3{margin:8px 0 0;font-size:var(--fs-h3)}
+.shelf-author{margin:10px 0 0;color:var(--red-ink);letter-spacing:.14em;text-transform:uppercase;font-size:.78rem}
+.shelf-open{display:inline-block;margin-top:14px;color:var(--text);text-decoration:none;border-bottom:1px solid var(--red-ink);padding-bottom:2px}
+@media(prefers-reduced-motion:reduce){.spine,.shelf-card{transition:none;animation:none}}
