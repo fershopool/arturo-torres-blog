@@ -145,6 +145,7 @@ if(document.body.dataset.page==="home"){
       cur=btn;btn.setAttribute("aria-pressed","true");
       const a=el("a","shelf-open","Leer →");a.href=href(p);
       const b=el("div","shelf-meta");
+      if(p===l[0])b.append(el("span","shelf-badge","Último añadido"));
       b.append(el("p","date",dateTxt(p.date)),el("h3",null,p.title),el("p","shelf-author","Arturo Torres"),a);
       const card=el("div","shelf-card");card.append(cover(p,"shelf-cover"),b);
       info.replaceChildren(card);
@@ -159,7 +160,14 @@ if(document.body.dataset.page==="home"){
       s.addEventListener("click",()=>show(p,s));
       row.append(s);
     });
-    wrap.append(row,info);return wrap;
+    wrap.append(row,info);
+    /* al mostrarse la estantería por completo, se elige solo el último añadido */
+    const io=new IntersectionObserver(es=>{
+      if(!es[0].isIntersecting)return;io.disconnect();
+      setTimeout(()=>{if(!cur&&row.firstChild)show(l[0],row.firstChild);},650);
+    },{threshold:.6});
+    io.observe(wrap);
+    return wrap;
   };
   const state=(txt,tag="p")=>el(tag,"state",txt);
 
@@ -404,8 +412,9 @@ if(document.body.dataset.page==="home"){
       fc.strips.forEach(t=>{t.fr.c.style.transform=T(A);t.bk.c.style.transform=T(B);});
       fc.underR.c.style.transform=T(B);if(fc.underL)fc.underL.c.style.transform=T(A);
       const showR=fwd,showL=!fwd&&two;
-      fc.underR.f.style.visibility=fc.castR.style.visibility=showR?"visible":"hidden";
-      if(fc.underL)fc.underL.f.style.visibility=fc.castL.style.visibility=showL?"visible":"hidden";
+      /* opacity/display, nunca visibility: un hijo "visible" se vería aunque la capa esté oculta y duplicaría el texto */
+      fc.underR.f.style.opacity=showR?"1":"0";fc.castR.style.display=showR?"":"none";
+      if(fc.underL){fc.underL.f.style.opacity=showL?"1":"0";fc.castL.style.display=showL?"":"none";}
       const dur=1100,t0=performance.now();let raf=0,ended=false;
       const ease=p=>{const s=p*p*(3-2*p);return .5*s+.5*(p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2);};
       const frame=p=>{

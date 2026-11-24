@@ -536,3 +536,17 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
 #comentarios .cm-card.cm-resp{padding:12px 14px;background:#ffffff08;border-radius:12px;border-left:2px solid var(--red)}
 #comentarios .cm-card.cm-resp .cm-avatar{width:32px;height:32px;font-size:1rem}
 @media(max-width:600px){#comentarios .cm-msg{flex:none}}
+
+.shelf-badge{display:inline-block;margin-bottom:10px;padding:4px 12px;border-radius:999px;background:linear-gradient(120deg,var(--red),#6b2f9e);color:#fff;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
+.spine::before,.spine::after{transition:opacity .4s}
+.spine[aria-pressed=true]{animation:spinePick .9s var(--ease) both}
+@keyframes spinePick{0%{transform:translateY(0)}45%{transform:translateY(-34px) rotate(-5deg)}100%{transform:translateY(-22px) rotate(-3deg)}}
+/* cómo leer: iconos con vida */
+.how-card{transition:transform .5s var(--ease),border-color .4s}
+.how-card:hover{transform:translateY(-6px);border-color:#e8677a66}
+.how-icon{position:relative}
+.how-icon::after{content:"";position:absolute;inset:-1px;border-radius:50%;border:1px solid var(--red-ink);opacity:0;animation:howPulse 3.2s ease-out infinite;animation-delay:calc(var(--i,0)*.7s)}
+.how-icon svg{animation:howBob 3.6s ease-in-out infinite;animation-delay:calc(var(--i,0)*.5s)}
+@keyframes howPulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.7);opacity:0}}
+@keyframes howBob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(-4deg)}}
+@media(prefers-reduced-motion:reduce){.how-icon::after,.how-icon svg,.spine[aria-pressed=true]{animation:none}.how-card{transition:none}}
