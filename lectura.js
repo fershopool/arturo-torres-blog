@@ -60,6 +60,13 @@
       });
       t.parentNode.replaceChild(f, t);
     });
+    /* el número de nota entra en su turno, justo tras la palabra anterior */
+    el.querySelectorAll('sup').forEach(function (sp) {
+      var prev = sp.previousSibling;
+      while (prev && !(prev.nodeType === 1 && prev.classList.contains(cls))) prev = prev.previousSibling;
+      sp.classList.add(cls);
+      sp.style.setProperty('--i', prev ? (Number(prev.style.getPropertyValue('--i')) || 0) + 1 : 0);
+    });
   }
 
   function render(html, base) {

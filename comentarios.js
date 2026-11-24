@@ -209,7 +209,7 @@ function formRespuesta(c,rs,bt,slot){
         body:JSON.stringify({slug,seudonimo:nombre,comentario:texto,parent_id:c.id})});
       const r=Array.isArray(data)?data[0]:data;
       if(r&&r.comentario){rows.push(r);rs.append(tarjeta(r,true,true));}
-      slot.replaceChildren();bt.setAttribute("aria-expanded","false");
+      slot.replaceChildren();bt.setAttribute("aria-expanded","false");bt.focus();
     }catch(e){ls.del(K_ENVIO);m.textContent=textoError(e,"publicar tu respuesta");b.disabled=false;b.textContent="Enviar respuesta";}
   });
   return f;
@@ -242,7 +242,7 @@ async function cargar(){
   if(cargando)return;
   cargando=true;pintaCargando();
   try{
-    const data=await api(`/rest/v1/comentarios?slug=eq.${encodeURIComponent(slug)}&select=*&order=creado.desc&limit=300`);
+    const data=await api(`/rest/v1/comentarios?slug=eq.${encodeURIComponent(slug)}&select=*&order=creado.desc&limit=1000`);
     rows=Array.isArray(data)?data:[];
     pintaLista();
   }catch(e){

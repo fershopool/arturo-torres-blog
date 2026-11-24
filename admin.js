@@ -494,6 +494,7 @@ async function publicar(){
     if(!confirm("Hay avisos en el HTML:\n- "+an.avisos.join("\n- ")+"\n\n¿Publicar igualmente?"))return;
   }
   aviso(pubMsg,"","");aviso(pubOk,"","");
+  publicando=true;btnPublicar.disabled=true; /* antes del primer await: evita doble envío */
 
   const hu=huella(d);
   if(!pubEstado||pubEstado.slug!==d.slug||pubEstado.huella!==hu){
@@ -502,10 +503,10 @@ async function publicar(){
   const st=pubEstado;
   if(!st.fila){
     const libre=await comprobarSlug(d.slug);
-    if(!libre)return;
+    if(!libre){publicando=false;btnPublicar.disabled=false;return;}
   }
 
-  publicando=true;btnPublicar.disabled=true;btnPublicar.textContent="Publicando…";
+  btnPublicar.textContent="Publicando…";
   const pasos=[];
   if(d.pdf){
     pasos.push({k:"pdf",label:`Subir PDF (${d.pdf.name})`,run:async()=>{
