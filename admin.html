@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Administración de textos · Arturo Torres</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<header class="cab">
+  <div class="wrap barra">
+    <a class="marca" href="./">Arturo Torres</a>
+    <span class="etiqueta">Administración</span>
+    <button type="button" id="btn-salir" class="btn sec" hidden>Cerrar sesión</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <p id="estado-global" class="aviso" role="status" hidden></p>
+
+  <section id="vista-login" class="tarjeta login" aria-labelledby="login-titulo">
+    <h1 id="login-titulo">Iniciar sesión</h1>
+    <form id="form-login" novalidate>
+      <div class="campo">
+        <label for="login-email">Correo</label>
+        <input id="login-email" type="email" autocomplete="username" required>
+      </div>
+      <div class="campo">
+        <label for="login-pass">Contraseña</label>
+        <input id="login-pass" type="password" autocomplete="current-password" required>
+      </div>
+      <p id="login-msg" class="aviso" role="alert" hidden></p>
+      <button id="btn-login" class="btn" type="submit">Entrar</button>
+    </form>
+  </section>
+
+  <div id="vista-panel" hidden>
+    <section class="tarjeta" aria-labelledby="nuevo-titulo">
+      <h1 id="nuevo-titulo">Nuevo texto</h1>
+      <form id="form-texto" novalidate>
+        <div class="rejilla">
+          <div class="campo">
+            <label for="f-titulo">Título</label>
+            <input id="f-titulo" type="text" maxlength="200" autocomplete="off">
+          </div>
+          <div class="campo">
+            <label for="f-autor">Autor</label>
+            <input id="f-autor" type="text" maxlength="120" autocomplete="off">
+          </div>
+          <div class="campo">
+            <label for="f-fecha">Fecha</label>
+            <input id="f-fecha" type="date">
+          </div>
+          <div class="campo">
+            <label for="f-slug">Slug (dirección del texto)</label>
+            <input id="f-slug" type="text" maxlength="80" pattern="[a-z0-9-]{1,80}" autocomplete="off" aria-describedby="f-slug-ayuda f-slug-estado">
+            <span id="f-slug-ayuda" class="ayuda">Se genera del título. Solo minúsculas, números y guiones.</span>
+            <span id="f-slug-estado" class="estado" role="status" hidden></span>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="f-resumen">Resumen</label>
+          <textarea id="f-resumen" rows="3" maxlength="600" aria-describedby="f-resumen-cont"></textarea>
+          <span id="f-resumen-cont" class="contador">0/600</span>
+        </div>
+
+        <div class="rejilla">
+          <div class="campo">
+            <label for="f-pdf">PDF (opcional)</label>
+            <input id="f-pdf" type="file" accept="application/pdf" aria-describedby="f-pdf-info">
+            <span id="f-pdf-info" class="estado" role="status" hidden></span>
+          </div>
+          <div class="campo">
+            <label for="f-imgs">Imágenes de las figuras (opcional)</label>
+            <input id="f-imgs" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple aria-describedby="f-imgs-info">
+            <span id="f-imgs-info" class="estado" role="status" hidden></span>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="f-html">HTML del texto (pegado de la IA)</label>
+          <textarea id="f-html" class="codigo" rows="12" spellcheck="false" aria-describedby="f-html-ayuda"></textarea>
+          <span id="f-html-ayuda" class="ayuda">Debe empezar por &lt;header&gt; y tener &lt;section class="cuerpo"&gt;. Los nombres de las imágenes deben coincidir con los archivos adjuntos.</span>
+        </div>
+
+        <div class="acciones">
+          <button type="button" id="btn-validar" class="btn sec">Validar</button>
+          <button type="button" id="btn-copiar" class="btn sec">Copiar prompt para IA</button>
+        </div>
+        <details id="det-prompt" class="prompt">
+          <summary>Ver prompt</summary>
+          <textarea id="prompt-texto" class="codigo" rows="14" readonly spellcheck="false" aria-label="Prompt para IA"></textarea>
+        </details>
+
+        <div id="avisos" class="avisos" hidden>
+          <p id="avisos-titulo" role="status"></p>
+          <ul id="lista-avisos"></ul>
+        </div>
+
+        <div class="vista">
+          <h2 class="subtitulo">Vista previa</h2>
+          <div id="vista-previa" class="previa" aria-live="polite">
+            <p class="ayuda">Aquí aparecerá el texto tal como se verá.</p>
+          </div>
+        </div>
+
+        <div class="pie-form">
+          <button type="button" id="btn-publicar" class="btn">Publicar</button>
+          <p id="pub-msg" class="aviso" role="alert" hidden></p>
+          <p id="pub-ok" class="aviso" role="status" hidden></p>
+        </div>
+        <ol id="progreso" class="progreso" aria-label="Progreso de publicación" hidden></ol>
+      </form>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="lista-titulo">
+      <h2 id="lista-titulo">Textos</h2>
+      <p id="lista-msg" class="aviso" role="status" hidden></p>
+      <ul id="lista-textos" class="lista"></ul>
+    </section>
+  </div>
+
+  <p class="volver"><a href="./">← Volver al sitio</a></p>
+</main>
+
+<footer><div class="wrap"><p>© Arturo Torres</p></div></footer>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

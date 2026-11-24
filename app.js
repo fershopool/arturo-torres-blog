@@ -2,7 +2,46 @@ const $=s=>document.querySelector(s);
 const fmt=d=>new Date(d+"T12:00").toLocaleDateString("es-MX",{year:"numeric",month:"long",day:"numeric"});
 const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const wide=matchMedia("(min-width:1000px)");
-const posts=fetch("posts.json").then(r=>r.json());
+const staticP=fetch("posts.json").then(r=>r.json());
+
+/* textos subidos desde el admin: tabla public.textos (REST, clave anon de config.js) */
+const sbCfg=()=>{const c=window.SUPABASE||{};return {base:String(c.url||"").replace(/\/+$/,""),key:String(c.anonKey||"")};};
+const sbHeaders=c=>({apikey:c.key,Authorization:"Bearer "+c.key,Accept:"application/json"});
+const fromRow=r=>({slug:r.slug,title:r.titulo,date:r.fecha,summary:r.resumen||null,thumb:r.thumb_url||null,pdf:r.pdf_url||null,fromDb:true,htmlInline:r.html||"",base:r.base_url||null});
+const dbList=()=>{
+  const c=sbCfg();if(!c.base||!c.key)return Promise.resolve([]);
+  return fetch(`${c.base}/rest/v1/textos?select=slug,titulo,autor,fecha,resumen,pdf_url,thumb_url&order=fecha.desc,creado.desc`,{headers:sbHeaders(c)})
+    .then(r=>{if(!r.ok)throw 0;return r.json();})
+    .then(rows=>Array.isArray(rows)?rows.map(fromRow):[])
+    .catch(()=>[]);
+};
+/* estáticos primero: si un slug existe en ambos, gana posts.json */
+const posts=Promise.all([staticP,dbList()]).then(([st,db])=>{
+  const seen=new Set(),out=[];
+  [...st,...db].forEach(p=>{if(!seen.has(p.slug)){seen.add(p.slug);out.push(p);}});
+  return out;
+});
+/* entrada de un texto: posts.json, si no, una consulta individual a la BD */
+const getPost=async slug=>{
+  const st=await staticP.catch(()=>[]);
+  const s=st.find(x=>x.slug===slug);if(s)return s;
+  const c=sbCfg();if(!slug||!c.base||!c.key)return null;
+  const r=await fetch(`${c.base}/rest/v1/textos?select=*&slug=eq.${encodeURIComponent(slug)}&limit=1`,{headers:sbHeaders(c)});
+  if(!r.ok)throw 0;
+  const rows=await r.json();
+  return Array.isArray(rows)&&rows[0]?fromRow(rows[0]):null;
+};
+/* HTML de la BD: DOMPurify con lista blanca; sin DOMPurify no se inyecta nada */
+const SAN={ALLOWED_TAGS:"header,section,h1,h2,h3,p,em,strong,i,b,sup,sub,a,ol,ul,li,figure,figcaption,img,blockquote,br".split(","),ALLOWED_ATTR:["href","id","class","src","alt","title"],ALLOW_DATA_ATTR:false};
+let sanHook=false;
+const sanitizeHtml=h=>{
+  if(!h||!window.DOMPurify)return null;
+  if(!sanHook){sanHook=true;DOMPurify.addHook("afterSanitizeAttributes",n=>{
+    if(n.hasAttribute("href")&&!/^(https?:|#)/i.test(n.getAttribute("href")))n.removeAttribute("href");
+  });}
+  return DOMPurify.sanitize(String(h),SAN)||null;
+};
+const safeURL=s=>{try{return s?new URL(s):null;}catch(e){return null;}};
 
 /* header: se encoge al hacer scroll */
 const hdr=$("header");
@@ -11,7 +50,7 @@ addEventListener("scroll",onHeader,{passive:true});onHeader();
 
 if(document.body.dataset.page==="home"){
   posts.then(l=>{
-    const cards=l.sort((a,b)=>b.date.localeCompare(a.date)).map((p,i)=>{
+    const cards=l.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))).map((p,i)=>{
       const img=p.thumb||p.image;
       const a=document.createElement("a");
       a.className=`card${img?"":" noimg"}${reduce?"":" reveal"}`;
@@ -63,8 +102,8 @@ if(document.body.dataset.page==="home"){
   addEventListener("scroll",()=>{if(!raf)raf=requestAnimationFrame(runHooks);},{passive:true});
   updProgress();
 
-  posts.then(async l=>{
-    const p=l.find(x=>x.slug===slug);if(!p)throw 0;
+  getPost(slug).then(async p=>{
+    if(!p)throw 0;
     document.title=p.title+" · Arturo Torres";
     const art=$("#post");art.replaceChildren();
 
@@ -80,15 +119,17 @@ if(document.body.dataset.page==="home"){
     art.before(chrome);
 
     /* texto en fragmento HTML */
-    const htmlURL=p.html?new URL(p.html,location.href):null;
+    const htmlURL=(!p.fromDb&&p.html)?new URL(p.html,location.href):null;
     let frag=null;
-    if(htmlURL){try{const r=await fetch(htmlURL);if(!r.ok)throw 0;frag=await r.text();}catch(e){frag=null;}}
+    if(p.fromDb){frag=sanitizeHtml(p.htmlInline);}
+    else if(htmlURL){try{const r=await fetch(htmlURL);if(!r.ok)throw 0;frag=await r.text();}catch(e){frag=null;}}
     if(frag===null){ /* sin fragmento: PDF o Markdown como antes */
       const h1=document.createElement("h1"),body=document.createElement("div");
       h1.textContent=p.title;body.id="body";
       art.append(h1);
       if(p.pdf){chrome.append(dlLink(p.pdf));art.append(body);return readPdf(p.pdf,body);}
       art.append(body);
+      if(p.fromDb){body.textContent=p.summary||"";return;}
       body.innerHTML=marked.parse(await fetch(`posts/${encodeURIComponent(slug)}.md`).then(r=>r.text()));
       return;
     }
@@ -214,7 +255,9 @@ if(document.body.dataset.page==="home"){
     /* fragmento en <template> (inerte): las rutas de imagen se reescriben antes de que el navegador las pida */
     const parseFrag=()=>{
       const t=document.createElement("template");t.innerHTML=frag;const c=t.content;
-      c.querySelectorAll("img").forEach(im=>{im.src=new URL(im.getAttribute("src"),htmlURL).href;});
+      /* DB: base_url resuelve las rutas relativas; si no hay base, se dejan como están */
+      const fb=p.fromDb?safeURL(p.base):htmlURL;
+      if(fb)c.querySelectorAll("img").forEach(im=>{im.src=new URL(im.getAttribute("src")||"",fb).href;});
       c.querySelectorAll("#anexos img").forEach(im=>{
         im.loading="lazy";im.tabIndex=0;im.setAttribute("role","button");im.setAttribute("aria-label","Ampliar imagen: "+im.alt);
       });
@@ -377,7 +420,13 @@ if(document.body.dataset.page==="home"){
     if(document.fonts)document.fonts.ready.then(()=>{bookLayout();placeNotes();});
 
     render(cur);
-  }).catch(()=>{$("#post").textContent="Texto no encontrado.";});
+  }).catch(()=>{
+    const art=$("#post");art.replaceChildren();
+    const h=document.createElement("h1");h.textContent="Texto no encontrado";
+    const pp=document.createElement("p");pp.textContent="El enlace puede estar mal escrito o el texto ya no está publicado.";
+    const back=document.createElement("a");back.href="./";back.textContent="← Volver a todos los textos";
+    art.append(h,pp,back);
+  });
 }
 
 /* PDF original: canvas de pdf.js sobre hojas blancas, sin filtros de color */

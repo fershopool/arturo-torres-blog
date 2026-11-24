@@ -1,0 +1,121 @@
+/* Estilos del panel de administración (admin.html). Mismos tokens y tipografía que style.css, sin depender de él. */
+:root{--bg:#0a0a18;--navy:#111a3f;--purple:#2b1450;--red:#b3283c;--text:#e9e5f2;--muted:#a59fbd;--line:#ffffff14;--violet:#7a3fd0;--blue:#1d3a8a;--ok:#3fbf8a;--warn:#e0a13a;--danger:#e0546a;--campo:#ffffff0d;--campo-borde:#ffffff26}
+:root:not([data-theme="light"]){color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 10% -10%,var(--purple),transparent),radial-gradient(900px 500px at 100% 0,var(--navy),transparent),var(--bg);background-attachment:fixed;color:var(--text);font:16px/1.6 "Inter",system-ui,sans-serif;min-height:100vh;min-height:100dvh;overflow-wrap:anywhere}
+h1,h2,h3{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;line-height:1.15;margin:0 0 14px}
+h1{font-size:clamp(1.8rem,4vw,2.4rem)}
+h2{font-size:clamp(1.4rem,3vw,1.8rem)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--red);outline-offset:3px;border-radius:6px}
+img,canvas{max-width:100%;height:auto}
+.wrap{max-width:1100px;width:100%;margin:0 auto;padding:0 16px}
+@media(min-width:2200px){body{font-size:20px}.wrap{max-width:1400px}}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* cabecera */
+.cab{position:sticky;top:0;z-index:50;background:#0a0a18d9;-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+.barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px}
+.marca{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:1.4rem;text-decoration:none;min-height:44px;display:inline-flex;align-items:center}
+.etiqueta{color:var(--muted);font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;margin-right:auto}
+
+/* tarjetas */
+.tarjeta{background:#ffffff08;border:1px solid var(--line);border-radius:14px;padding:clamp(16px,3vw,28px);margin:24px 0}
+.login{max-width:440px;margin:clamp(24px,8vw,64px) auto}
+.volver{margin:24px 0;color:var(--muted)}
+footer{color:var(--muted);font-size:.9rem;padding:32px 0}
+
+/* formularios */
+.rejilla{display:grid;grid-template-columns:1fr;gap:0 16px}
+@media(min-width:720px){.rejilla{grid-template-columns:1fr 1fr}}
+.campo{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-width:0}
+label{font-weight:500;font-size:.95rem}
+input[type=text],input[type=email],input[type=password],input[type=date],textarea{width:100%;font:inherit;color:var(--text);background:var(--campo);border:1px solid var(--campo-borde);border-radius:10px;padding:10px 12px;min-height:44px;max-width:100%}
+input[type=file]{font:inherit;color:var(--muted);max-width:100%;padding:8px 0;min-height:44px}
+input[type=file]::file-selector-button{font:inherit;color:var(--text);background:#ffffff14;border:1px solid var(--campo-borde);border-radius:10px;padding:8px 12px;margin-right:10px;cursor:pointer}
+textarea{resize:vertical;line-height:1.5}
+textarea.codigo{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.88rem}
+input:focus,textarea:focus{outline:2px solid var(--red);outline-offset:1px;border-color:transparent}
+input[aria-invalid="true"]{border-color:var(--danger)}
+.ayuda{color:var(--muted);font-size:.88rem}
+.contador{color:var(--muted);font-size:.85rem;align-self:flex-end}
+.estado{font-size:.9rem;color:var(--muted)}
+.estado[data-tipo="ok"],.aviso[data-tipo="ok"]{color:var(--ok)}
+.estado[data-tipo="error"],.aviso[data-tipo="error"]{color:var(--danger)}
+.estado[data-tipo="info"],.aviso[data-tipo="info"]{color:var(--muted)}
+.aviso{font-size:.95rem;margin:12px 0;padding:10px 12px;border-radius:10px;background:#ffffff0a;border:1px solid var(--line)}
+.aviso[data-tipo="error"]{background:#e0546a1a;border-color:#e0546a55}
+.aviso[data-tipo="ok"]{background:#3fbf8a1a;border-color:#3fbf8a55}
+.aviso a{font-weight:600}
+
+/* botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid transparent;font:inherit;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--violet),var(--red));cursor:pointer;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;-webkit-tap-highlight-color:transparent}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 26px -10px #b3283cb3}
+.btn:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
+.btn.sec{background:#ffffff14;border-color:var(--campo-borde);color:var(--text)}
+.btn.peligro{background:transparent;border-color:#e0546a88;color:#ff9aa8}
+.btn.peligro:hover{background:#e0546a22}
+.acciones{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 16px}
+.pie-form{display:flex;flex-direction:column;gap:4px;align-items:flex-start;margin-top:16px}
+.pie-form .aviso{width:100%}
+.pie-form .btn{min-width:200px}
+
+/* prompt */
+.prompt{margin:0 0 16px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#ffffff06}
+.prompt summary{cursor:pointer;color:var(--muted);min-height:44px;display:flex;align-items:center}
+.prompt textarea{margin:8px 0 4px}
+
+/* avisos de validación */
+.avisos{border:1px solid #e0a13a66;background:#e0a13a14;border-radius:10px;padding:12px 16px;margin:0 0 16px}
+.avisos p{margin:0 0 6px;font-weight:600}
+.avisos p[data-tipo="ok"]{color:var(--ok)}
+.avisos p[data-tipo="error"]{color:var(--warn)}
+.avisos li{margin:4px 0 4px 18px;color:var(--text);font-size:.95rem}
+
+/* vista previa: aislada, con la tipografía de lectura */
+.vista{margin-top:8px}
+.subtitulo{font-size:1.2rem;color:var(--muted);font-family:Inter,system-ui,sans-serif;font-weight:500;margin:8px 0}
+.previa{contain:content;border:1px dashed var(--campo-borde);border-radius:12px;padding:clamp(14px,3vw,26px);max-height:70vh;overflow:auto;background:#0a0a18aa}
+.previa header h1{font-size:clamp(1.8rem,4vw,2.6rem);margin-bottom:10px}
+.previa .autor{color:var(--muted);font-style:italic;margin:0 0 8px}
+.previa .resumen{color:var(--muted);border-left:2px solid var(--red);padding-left:14px;margin:16px 0 24px}
+.previa h2{margin-top:28px}
+.previa p{margin:0 0 14px;text-align:justify;hyphens:auto}
+.previa sup a{text-decoration:none;color:var(--red);font-weight:600}
+.previa .notas{font-size:.9rem;color:var(--muted);padding-left:22px}
+.previa figure{margin:18px 0;text-align:center}
+.previa figure img{display:block;margin:0 auto;border-radius:8px}
+.previa figure img.falta{min-height:80px;width:100%;background:#ffffff0d;border:1px dashed #e0a13a}
+.previa figcaption{font-size:.9rem;color:var(--muted);margin-top:6px}
+.previa ul{padding-left:20px}
+
+/* progreso de publicación */
+.progreso{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:8px}
+.paso{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#ffffff08;flex-wrap:wrap}
+.paso-est{color:var(--muted);font-size:.9rem;white-space:nowrap}
+.paso[data-estado="ok"] .paso-est{color:var(--ok)}
+.paso[data-estado="curso"] .paso-est{color:var(--text)}
+.paso[data-estado="error"] .paso-est{color:var(--danger)}
+
+/* lista de textos */
+.lista{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.item{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px;border:1px solid var(--line);border-radius:12px;background:#ffffff06}
+.item.oculto{opacity:.7}
+.item-miniatura{width:54px;height:72px;object-fit:cover;border-radius:6px;background:#ffffff14;flex:none}
+.item-info{flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:2px}
+.item-titulo{font-family:"Cormorant Garamond",serif;font-size:1.25rem;font-weight:600;line-height:1.2}
+.item-meta{color:var(--muted);font-size:.88rem}
+.item-slug{font-size:.8rem;color:var(--muted);word-break:break-all}
+.item-acciones{display:flex;gap:8px;flex-wrap:wrap}
+.item-acciones .btn{min-height:44px}
+.vacio{color:var(--muted);padding:12px 0}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);max-width:min(560px,calc(100vw - 32px));background:#111a3fF2;border:1px solid var(--campo-borde);color:var(--text);padding:12px 18px;border-radius:12px;box-shadow:0 14px 40px -12px #000a;z-index:100;font-size:.95rem;text-align:center}
+
+/* movimiento reducido */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

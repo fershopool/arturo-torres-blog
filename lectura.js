@@ -76,7 +76,7 @@
     // rutas de imágenes relativas a la carpeta del fragmento
     articulo.querySelectorAll('img').forEach(function (img) {
       var s = img.getAttribute('src');
-      if (s) img.setAttribute('src', new URL(s, base).href);
+      if (s) { try { img.setAttribute('src', new URL(s, base).href); } catch (e) { img.removeAttribute('src'); } }
       img.loading = 'lazy';
       img.decoding = 'async';
     });
@@ -258,20 +258,61 @@
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onScroll);
 
+  // Textos subidos desde el admin (tabla textos). Mismas opciones que app.js.
+  var SAN = { ALLOWED_TAGS: "header,section,h1,h2,h3,p,em,strong,i,b,sup,sub,a,ol,ul,li,figure,figcaption,img,blockquote,br".split(","), ALLOWED_ATTR: ["href", "id", "class", "src", "alt", "title"], ALLOW_DATA_ATTR: false };
+  var sanHook = false;
+  function sanitizeHtml(h) {
+    if (!h || !window.DOMPurify) return null;
+    if (!sanHook) {
+      sanHook = true;
+      DOMPurify.addHook('afterSanitizeAttributes', function (n) {
+        if (n.hasAttribute('href') && !/^(https?:|#)/i.test(n.getAttribute('href'))) n.removeAttribute('href');
+      });
+    }
+    return DOMPurify.sanitize(String(h), SAN) || null;
+  }
+  function sbCfg() {
+    var c = window.SUPABASE || {};
+    return { base: String(c.url || '').replace(/\/+$/, ''), key: String(c.anonKey || '') };
+  }
+  function fetchDbRow(s) {
+    var c = sbCfg();
+    if (!s || !c.base || !c.key) return Promise.resolve(null);
+    return fetch(c.base + '/rest/v1/textos?select=*&slug=eq.' + encodeURIComponent(s) + '&limit=1', {
+      headers: { apikey: c.key, Authorization: 'Bearer ' + c.key, Accept: 'application/json' }
+    }).then(function (r) {
+      if (!r.ok) throw new Error('textos ' + r.status);
+      return r.json();
+    }).then(function (rows) { return Array.isArray(rows) && rows[0] ? rows[0] : null; });
+  }
+  function baseDe(u) {
+    try { return new URL(u || '', location.href).href; } catch (e) { return location.href; }
+  }
+
   // Carga
   function load() {
     if (!slug) { fail('Falta el texto a leer.'); return; }
     fetch('posts.json', { cache: 'no-cache' })
       .then(function (r) { if (!r.ok) throw new Error('posts.json ' + r.status); return r.json(); })
+      .catch(function (err) { console.warn('[lectura] ' + err.message); return []; })
       .then(function (posts) {
         var entry = posts.find(function (p) { return p.slug === slug; });
-        if (!entry) throw new Error('slug no encontrado');
-        volver.href = 'post.html?p=' + encodeURIComponent(slug);
-        var fragUrl = new URL(entry.html || ('posts/' + slug + '/contenido.html'), location.href);
-        return fetch(fragUrl.href, { cache: 'no-cache' }).then(function (r) {
-          if (!r.ok) throw new Error('fragmento ' + r.status);
-          return r.text();
-        }).then(function (html) { render(html, fragUrl.href); });
+        if (entry) {
+          volver.href = 'post.html?p=' + encodeURIComponent(slug);
+          var fragUrl = new URL(entry.html || ('posts/' + slug + '/contenido.html'), location.href);
+          return fetch(fragUrl.href, { cache: 'no-cache' }).then(function (r) {
+            if (!r.ok) throw new Error('fragmento ' + r.status);
+            return r.text();
+          }).then(function (html) { render(html, fragUrl.href); });
+        }
+        return fetchDbRow(slug).then(function (row) {
+          if (!row) throw new Error('slug no encontrado');
+          var html = sanitizeHtml(row.html);
+          if (html === null) throw new Error('texto sin HTML o sin DOMPurify');
+          volver.href = 'post.html?p=' + encodeURIComponent(slug);
+          if (row.titulo) document.title = row.titulo + ' · Arturo Torres';
+          render(html, baseDe(row.base_url));
+        });
       })
       .catch(function (err) {
         console.warn('[lectura] ' + err.message);
