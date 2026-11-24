@@ -132,47 +132,94 @@ const msg=el("p","cm-msg");msg.setAttribute("role","status");
 const btn=el("button","cm-btn","Publicar");btn.type="submit";
 acciones.append(msg,btn);
 
-form.append(campoNombre,fs,campoTexto,trampa,acciones);
+form.append(campoNombre,fs,campoTexto);
+form.append(trampa,acciones);
 
 /* Lista y avisos */
 const aviso=el("div","cm-aviso");
 const lista=el("ul","cm-lista");
 
-sec.append(resumen,form,lista,aviso);
+const tForm=el("h3","cm-sub","Deja tu comentario");
+sec.append(resumen,lista,aviso,tForm,form);
 ANCLA.after(sec);
 
 /* ---- Estado ---- */
 let rows=[],cargando=false,enviando=false;
 
+const tops=()=>rows.filter(r=>!r.parent_id);
+const respuestasDe=id=>rows.filter(r=>r.parent_id===id).sort((a,b)=>String(a.creado).localeCompare(String(b.creado)));
+
 function pintaResumen(){
   resumen.replaceChildren();
-  if(!rows.length){resumen.textContent="Sin calificaciones todavía";return;}
-  const avg=rows.reduce((s,r)=>s+Number(r.estrellas),0)/rows.length;
+  const t=tops().filter(r=>r.estrellas!=null);
+  if(!t.length){resumen.textContent="Sin calificaciones todavía";return;}
+  const avg=t.reduce((s,r)=>s+Number(r.estrellas),0)/t.length;
   resumen.append(
     barraEstrellas(avg,"cm-estrellas"),
-    el("span",null,`${avg.toFixed(1)} · ${rows.length} ${rows.length===1?"opinión":"opiniones"}`)
+    el("span",null,`${avg.toFixed(1)} · ${t.length} ${t.length===1?"opinión":"opiniones"}`)
   );
 }
 
-function tarjeta(c,nuevo){
-  const li=el("li","cm-card"+(nuevo?" cm-new":""));
+function tarjeta(c,nuevo,esResp){
+  const li=el("li","cm-card"+(nuevo?" cm-new":"")+(esResp?" cm-resp":""));
   const av=el("div","cm-avatar",inicial(c.seudonimo));av.setAttribute("aria-hidden","true");
   const cuerpo=el("div","cm-cuerpo");
   const cab=el("div","cm-cabeza");
   const nombre=el("strong","cm-nombre",String(c.seudonimo||""));
   const fecha=el("time","cm-fecha",hace(c.creado));
   if(c.creado)fecha.setAttribute("datetime",String(c.creado));
-  cab.append(nombre,barraEstrellas(Number(c.estrellas)||0,"cm-estrellas-c"),fecha);
+  cab.append(nombre);
+  if(!esResp&&c.estrellas!=null)cab.append(barraEstrellas(Number(c.estrellas)||0,"cm-estrellas-c"));
+  cab.append(fecha);
   cuerpo.append(cab,el("p","cm-texto",String(c.comentario||"")));
+  if(!esResp){
+    const rs=el("ul","cm-resp-lista");
+    respuestasDe(c.id).forEach(r=>rs.append(tarjeta(r,false,true)));
+    const bar=el("div","cm-acc");
+    const bt=el("button","cm-link","Responder");bt.type="button";bt.setAttribute("aria-expanded","false");
+    bar.append(bt);
+    const slot=el("div","cm-slot");
+    bt.addEventListener("click",()=>{
+      if(slot.firstChild){slot.replaceChildren();bt.setAttribute("aria-expanded","false");return;}
+      slot.append(formRespuesta(c,rs,bt,slot));bt.setAttribute("aria-expanded","true");
+      slot.querySelector("textarea").focus();
+    });
+    cuerpo.append(bar,slot,rs);
+  }
   li.append(av,cuerpo);
   return li;
 }
 
+function formRespuesta(c,rs,bt,slot){
+  const f=el("form","cm-rform");f.setAttribute("aria-label","Responder a "+String(c.seudonimo||""));
+  const n=el("input");n.type="text";n.required=true;n.maxLength=MAX_NOMBRE;n.placeholder="Tu seudónimo";n.value=ls.get(K_NOMBRE)||"";n.setAttribute("aria-label","Seudónimo");
+  const t=el("textarea");t.required=true;t.maxLength=MAX_TEXTO;t.rows=3;t.placeholder="Escribe tu respuesta…";t.setAttribute("aria-label","Tu respuesta");
+  const m=el("p","cm-msg");m.setAttribute("role","status");
+  const b=el("button","cm-btn","Enviar respuesta");b.type="submit";
+  f.append(n,t,m,b);
+  f.addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const nombre=normNombre(n.value).slice(0,MAX_NOMBRE),texto=normTexto(t.value).slice(0,MAX_TEXTO);
+    if(!nombre||!texto){m.textContent="Escribe tu seudónimo y tu respuesta.";return;}
+    const falta=ESPERA_MS-(Date.now()-Number(ls.get(K_ENVIO)||0));
+    if(falta>0){m.textContent=`Espera ${Math.ceil(falta/1000)} s antes de publicar otra.`;return;}
+    ls.set(K_ENVIO,String(Date.now()));ls.set(K_NOMBRE,nombre);b.disabled=true;b.textContent="Enviando…";
+    try{
+      const data=await api("/rest/v1/comentarios",{method:"POST",headers:{"Content-Type":"application/json",Prefer:"return=representation"},
+        body:JSON.stringify({slug,seudonimo:nombre,comentario:texto,parent_id:c.id})});
+      const r=Array.isArray(data)?data[0]:data;
+      if(r&&r.comentario){rows.push(r);rs.append(tarjeta(r,true,true));}
+      slot.replaceChildren();bt.setAttribute("aria-expanded","false");
+    }catch(e){ls.del(K_ENVIO);m.textContent=textoError(e,"publicar tu respuesta");b.disabled=false;b.textContent="Enviar respuesta";}
+  });
+  return f;
+}
+
 function pintaLista(){
-  lista.replaceChildren(...rows.map(r=>tarjeta(r,false)));
+  lista.replaceChildren(...tops().map(r=>tarjeta(r,false)));
   pintaResumen();
   aviso.replaceChildren();
-  if(!rows.length)aviso.append(el("p","cm-vacio","Sé el primero en comentar"));
+  if(!tops().length)aviso.append(el("p","cm-vacio","Sé el primero en comentar"));
 }
 
 function pintaCargando(){
@@ -195,7 +242,7 @@ async function cargar(){
   if(cargando)return;
   cargando=true;pintaCargando();
   try{
-    const data=await api(`/rest/v1/comentarios?slug=eq.${encodeURIComponent(slug)}&select=*&order=creado.desc&limit=100`);
+    const data=await api(`/rest/v1/comentarios?slug=eq.${encodeURIComponent(slug)}&select=*&order=creado.desc&limit=300`);
     rows=Array.isArray(data)?data:[];
     pintaLista();
   }catch(e){

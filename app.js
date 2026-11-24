@@ -58,7 +58,7 @@ if(document.body.dataset.page==="home"){
   /* calificaciones: promedio y total por slug; si falla o no hay config, no se muestran */
   const ratingsP=(()=>{
     const c=sbCfg();if(!c.base||!c.key)return Promise.resolve({});
-    return fetch(`${c.base}/rest/v1/comentarios?select=slug,estrellas&limit=1000`,{headers:sbHeaders(c)})
+    return fetch(`${c.base}/rest/v1/comentarios?select=slug,estrellas&estrellas=not.is.null&limit=1000`,{headers:sbHeaders(c)})
       .then(r=>{if(!r.ok)throw 0;return r.json();})
       .then(rows=>{
         const acc={};
