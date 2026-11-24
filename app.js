@@ -53,6 +53,49 @@ const onHeader=()=>{
   if(Math.abs(y-lastY)>6){hdr.classList.toggle("is-hidden",y>lastY&&y>220&&!hdr.contains(document.activeElement));lastY=y;}
 };
 addEventListener("scroll",onHeader,{passive:true});onHeader();
+
+/* menú: en móvil, botón hamburguesa + pantalla completa con círculo que se expande */
+(()=>{
+  const nav=hdr.querySelector(".nav");if(!nav)return;
+  const root=document.documentElement;
+  const burger=document.createElement("button");burger.type="button";burger.className="burger";
+  burger.setAttribute("aria-label","Abrir menú");burger.setAttribute("aria-expanded","false");burger.setAttribute("aria-controls","menu-ov");
+  burger.append(document.createElement("span"),document.createElement("span"));
+  nav.append(burger);
+  const ov=document.createElement("div");ov.className="menu-ov";ov.id="menu-ov";ov.hidden=true;
+  const ul=document.createElement("ul");ul.className="menu-list";
+  const links=[...hdr.querySelectorAll(".nav-link")].map(a=>[a.textContent,a.getAttribute("href")]);
+  const ig=hdr.querySelector(".ig-btn");
+  if(ig)links.push(["Instagram",ig.getAttribute("href"),true]);
+  links.forEach(([t,h,ext],i)=>{
+    const li=document.createElement("li");li.style.setProperty("--i",i);
+    const a=document.createElement("a");a.className="menu-link"+(ext?" menu-ig":"");a.href=h;
+    const n=document.createElement("span");n.className="menu-num";n.textContent=String(i+1).padStart(2,"0");
+    a.append(n,t+(ext?" ↗":""));
+    if(ext){a.target="_blank";a.rel="noopener";}
+    li.append(a);ul.append(li);
+  });
+  const foot=document.createElement("p");foot.className="menu-foot";foot.textContent="Arturo Torres · Historia del arte";
+  const navEl=document.createElement("nav");navEl.setAttribute("aria-label","Menú");navEl.append(ul);
+  ov.append(navEl,foot);document.body.append(ov);
+  let t=0;
+  const open=()=>{
+    clearTimeout(t);ov.hidden=false;
+    setTimeout(()=>{void ov.offsetWidth;root.classList.add("menu-open");},30);
+    burger.setAttribute("aria-expanded","true");burger.setAttribute("aria-label","Cerrar menú");
+    setTimeout(()=>{const f=ov.querySelector("a");if(f)f.focus({preventScroll:true});},350);
+  };
+  const close=(back)=>{
+    root.classList.remove("menu-open");
+    burger.setAttribute("aria-expanded","false");burger.setAttribute("aria-label","Abrir menú");
+    t=setTimeout(()=>{ov.hidden=true;},reduce?0:600);
+    if(back)burger.focus({preventScroll:true});
+  };
+  burger.addEventListener("click",()=>root.classList.contains("menu-open")?close(false):open());
+  ov.addEventListener("click",e=>{if(e.target.closest("a"))close(false);});
+  addEventListener("keydown",e=>{if(e.key==="Escape"&&root.classList.contains("menu-open"))close(true);});
+  matchMedia("(min-width:760px)").addEventListener("change",e=>{if(e.matches&&root.classList.contains("menu-open"))close(false);});
+})();
 /* sección activa en el menú (inicio) */
 if(document.body.dataset.page==="home"){
   const links=[...hdr.querySelectorAll(".nav-link")];
