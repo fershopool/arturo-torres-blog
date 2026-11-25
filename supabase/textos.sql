@@ -98,13 +98,14 @@ values (
 on conflict (id) do nothing;
 
 -- Políticas de storage.objects para el bucket "textos" ------------------------
--- Lectura pública (necesaria para listar y para las URL públicas).
+-- Las URL públicas funcionan sin política; listar el bucket es solo del admin.
 drop policy if exists "textos storage: lectura publica" on storage.objects;
-create policy "textos storage: lectura publica"
+drop policy if exists "textos storage: admin lee" on storage.objects;
+create policy "textos storage: admin lee"
   on storage.objects
   for select
-  to anon, authenticated
-  using (bucket_id = 'textos');
+  to authenticated
+  using (bucket_id = 'textos' and public.es_admin());
 
 -- Subir, reemplazar y borrar solo con sesión de administrador.
 drop policy if exists "textos storage: admin inserta" on storage.objects;

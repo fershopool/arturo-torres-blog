@@ -45,12 +45,13 @@ create policy "comentarios: anon lee"
 
 -- Inserción pública para anon. Sin políticas de UPDATE ni DELETE: nadie
 -- (salvo el panel de Supabase con rol de servicio) puede modificar o borrar.
-drop policy if exists "comentarios: anon publica" on public.comentarios;
-create policy "comentarios: anon publica"
-  on public.comentarios
-  for insert
-  to anon
-  with check (true);
+-- Se crea solo si no existe: así no pisa la versión de respuestas.sql.
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='comentarios'
+                 and policyname='comentarios: anon publica') then
+    create policy "comentarios: anon publica" on public.comentarios for insert to anon with check (true);
+  end if;
+end $$;
 
 -- Permisos explícitos (RLS filtra filas; GRANT permite el acceso a la tabla) -
 -- El esquema public debe ser visible para el rol anon.

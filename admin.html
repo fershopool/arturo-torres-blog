@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin.css?v=20261123f">
+<link rel="stylesheet" href="admin.css?v=20261123g">
 </head>
 <body>
 <header class="cab">
@@ -49,7 +49,7 @@
           </div>
           <div class="campo">
             <label for="f-autor">Autor</label>
-            <input id="f-autor" type="text" maxlength="120" autocomplete="off">
+            <input id="f-autor" type="text" maxlength="120" autocomplete="off" value="Arturo Torres">
           </div>
           <div class="campo">
             <label for="f-fecha">Fecha</label>
@@ -89,40 +89,42 @@
           </div>
         </fieldset>
 
-        <div class="campo">
-          <label for="f-arch">Importar archivo HTML (opcional)</label>
-          <input id="f-arch" type="file" accept=".html,.htm,text/html">
-          <span class="ayuda">Carga el HTML ya hecho por la IA en el cuadro de abajo, sin copiar y pegar.</span>
-        </div>
-        <div class="vistas-ok" id="vistas-ok" aria-live="polite"></div>
+        <fieldset class="libro-ed">
+          <legend>Importar el texto</legend>
 
-        <div class="rejilla">
           <div class="campo">
-            <label for="f-pdf">PDF (opcional)</label>
-            <input id="f-pdf" type="file" accept="application/pdf" aria-describedby="f-pdf-info">
+            <label for="f-pdf">1. Sube el PDF original</label>
+            <input id="f-pdf" type="file" accept=".pdf,application/pdf" aria-describedby="f-pdf-info">
             <span id="f-pdf-info" class="estado" role="status" hidden></span>
           </div>
+
           <div class="campo">
-            <label for="f-imgs">Imágenes de las figuras (opcional)</label>
-            <input id="f-imgs" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple aria-describedby="f-imgs-info">
+            <span class="paso-t">2. Copia el prompt y pégalo en tu IA junto con el mismo PDF</span>
+            <div class="acciones"><button type="button" id="btn-copiar" class="btn">Copiar prompt para IA</button></div>
+            <details id="det-prompt" class="prompt">
+              <summary>Ver prompt</summary>
+              <textarea id="prompt-texto" class="codigo" rows="14" readonly spellcheck="false" aria-label="Prompt para IA"></textarea>
+            </details>
+          </div>
+
+          <div class="campo">
+            <label for="f-html">3. Pega aquí el HTML que te devuelva la IA</label>
+            <textarea id="f-html" class="codigo" rows="12" spellcheck="false" aria-describedby="f-html-ayuda"></textarea>
+            <span id="f-html-ayuda" class="ayuda">Debe tener &lt;header&gt; y &lt;section class="cuerpo"&gt;.</span>
+          </div>
+          <div class="campo">
+            <label for="f-arch">O carga el archivo .html (opcional)</label>
+            <input id="f-arch" type="file" accept=".html,.htm,text/html">
+          </div>
+          <div class="campo">
+            <label for="f-imgs">4. Imágenes de las figuras, solo PNG/JPG (opcional)</label>
+            <input id="f-imgs" type="file" accept="image/png,image/jpeg,image/webp,image/gif,.pdf,application/pdf" multiple aria-describedby="f-imgs-info">
+            <span class="ayuda">Usa los mismos nombres que aparecen en el HTML.</span>
             <span id="f-imgs-info" class="estado" role="status" hidden></span>
           </div>
-        </div>
-
-        <div class="campo">
-          <label for="f-html">HTML del texto (pegado de la IA)</label>
-          <textarea id="f-html" class="codigo" rows="12" spellcheck="false" aria-describedby="f-html-ayuda"></textarea>
-          <span id="f-html-ayuda" class="ayuda">Debe empezar por &lt;header&gt; y tener &lt;section class="cuerpo"&gt;. Los nombres de las imágenes deben coincidir con los archivos adjuntos.</span>
-        </div>
-
-        <div class="acciones">
-          <button type="button" id="btn-validar" class="btn sec">Validar</button>
-          <button type="button" id="btn-copiar" class="btn sec">Copiar prompt para IA</button>
-        </div>
-        <details id="det-prompt" class="prompt">
-          <summary>Ver prompt</summary>
-          <textarea id="prompt-texto" class="codigo" rows="14" readonly spellcheck="false" aria-label="Prompt para IA"></textarea>
-        </details>
+          <div class="acciones"><button type="button" id="btn-validar" class="btn sec">Validar</button></div>
+          <div class="vistas-ok" id="vistas-ok" aria-live="polite"></div>
+        </fieldset>
 
         <div id="avisos" class="avisos" hidden>
           <p id="avisos-titulo" role="status"></p>
@@ -138,6 +140,7 @@
 
         <div class="pie-form">
           <button type="button" id="btn-publicar" class="btn">Publicar</button>
+          <button type="button" id="btn-cancelar" class="btn sec" hidden>Cancelar edición</button>
           <p id="pub-msg" class="aviso" role="alert" hidden></p>
           <p id="pub-ok" class="aviso" role="status" hidden></p>
         </div>
@@ -160,7 +163,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="config.js?v=20261123f"></script>
-<script src="admin.js?v=20261123f"></script>
+<script src="config.js?v=20261123g"></script>
+<script src="admin.js?v=20261123g"></script>
 </body>
 </html>

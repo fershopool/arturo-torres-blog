@@ -51,6 +51,8 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 .aviso a{font-weight:600}
 
 /* botones */
+.btn[hidden]{display:none}
+input[readonly]{opacity:.65}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid transparent;font:inherit;font-weight:600;color:#fff;background:linear-gradient(120deg,var(--violet),var(--red));cursor:pointer;text-decoration:none;transition:transform .2s ease,box-shadow .2s ease,opacity .2s ease;-webkit-tap-highlight-color:transparent}
 .btn:hover{transform:translateY(-1px);box-shadow:0 10px 26px -10px #b3283cb3}
 .btn:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
@@ -138,3 +140,5 @@ input[type=range]{width:100%;min-height:44px}
 .vistas-ok{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
 .vistas-ok span{font-size:.85rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
 .vistas-ok span.si{color:var(--ok);border-color:#3fbf8a66;background:#3fbf8a14}
+.paso-t{font-weight:500;font-size:.95rem}
+fieldset.libro-ed{min-width:0}

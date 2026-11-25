@@ -7,10 +7,18 @@ El prompt de esta página es el mismo que usa admin.js (constante PROMPT_IA). Si
 ## Prompt
 
 ```text
-Vas a convertir un texto académico en un fragmento HTML para publicarlo en la página de un autor. Recibirás el texto completo, pegado o como archivo adjunto.
+Vas a convertir un texto académico en un fragmento HTML para publicarlo en la página de un autor. Te adjunto el PDF original del texto.
+
+CÓMO LEER EL PDF
+- Lee TODAS las páginas, de la primera a la última, en orden de lectura (si hay columnas, columna por columna).
+- No copies encabezados, pies de página ni números de página repetidos.
+- Une las palabras cortadas con guion al final de línea y los párrafos partidos entre líneas o páginas.
+- Distingue las notas al pie del cuerpo y colócalas en la lista de notas.
+- Si el texto es largo, no lo resumas ni omitas nada: si no cabe en una respuesta, detente al final de un párrafo y, cuando escriba "sigue", continúa exactamente donde quedaste, sin repetir.
+- Si el PDF es un escaneo y no puedes leer una parte con seguridad, no la inventes: dímelo en vez de dar el HTML.
 
 RESPUESTA
-- Devuelve ÚNICAMENTE el fragmento HTML. Nada antes ni después: sin explicaciones, sin saludos y sin bloques de código Markdown.
+- Devuelve ÚNICAMENTE el fragmento HTML dentro de un solo bloque de código, para poder copiarlo. Nada antes ni después: sin explicaciones ni saludos.
 - No incluyas <html>, <head>, <body>, <style>, <script>, atributos style, JavaScript, ni clases distintas de las indicadas.
 - Usa caracteres UTF-8 reales: acentos (á, é, ñ), signos (¿, ¡) y comillas tal como aparecen en el original.
 
@@ -65,7 +73,7 @@ REGLAS DE CONTENIDO
 
 ## Después de la IA
 
-1. Revisa que el HTML empiece por `<header>` y no tenga bloques de código.
+1. Revisa que el HTML empiece por `<header>` (las comillas de bloque de código se quitan solas).
 2. Adjunta las imágenes con los mismos nombres que aparecen en `<!-- imagenes: ... -->` y en los `src` de las figuras.
 3. Si hay PDF, adjúntalo: se genera la miniatura de la página 1.
 4. Pulsa «Validar». Los avisos no impiden publicar, pero conviene resolverlos antes.

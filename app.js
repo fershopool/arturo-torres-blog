@@ -142,7 +142,7 @@ if(document.body.dataset.page==="home"){
     q.append(star,document.createTextNode(` ${avg} · ${plural(r.n)}`));
     return q;
   };
-  const modeChips=p=>{const o=[];if(p.pdf)o.push("PDF");if(p.fromDb?p.htmlInline:p.html)o.push("Hojas","Web");return o;};
+  const modeChips=p=>{const o=[];if(p.pdf)o.push("PDF");if(p.fromDb||p.html)o.push("Hojas","Web");return o;};
   const cover=(p,cls)=>{
     const w=el("div",cls);w.setAttribute("aria-hidden","true");
     const img=p.thumb||p.image;

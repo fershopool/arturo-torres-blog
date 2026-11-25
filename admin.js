@@ -20,10 +20,18 @@ const PURIFY_CFG={
 };
 
 /* Prompt para la IA. Fuente única: formato-ia.md se genera con este mismo texto. No uses comillas invertidas aquí. */
-const PROMPT_IA = `Vas a convertir un texto académico en un fragmento HTML para publicarlo en la página de un autor. Recibirás el texto completo, pegado o como archivo adjunto.
+const PROMPT_IA = `Vas a convertir un texto académico en un fragmento HTML para publicarlo en la página de un autor. Te adjunto el PDF original del texto.
+
+CÓMO LEER EL PDF
+- Lee TODAS las páginas, de la primera a la última, en orden de lectura (si hay columnas, columna por columna).
+- No copies encabezados, pies de página ni números de página repetidos.
+- Une las palabras cortadas con guion al final de línea y los párrafos partidos entre líneas o páginas.
+- Distingue las notas al pie del cuerpo y colócalas en la lista de notas.
+- Si el texto es largo, no lo resumas ni omitas nada: si no cabe en una respuesta, detente al final de un párrafo y, cuando escriba "sigue", continúa exactamente donde quedaste, sin repetir.
+- Si el PDF es un escaneo y no puedes leer una parte con seguridad, no la inventes: dímelo en vez de dar el HTML.
 
 RESPUESTA
-- Devuelve ÚNICAMENTE el fragmento HTML. Nada antes ni después: sin explicaciones, sin saludos y sin bloques de código Markdown.
+- Devuelve ÚNICAMENTE el fragmento HTML dentro de un solo bloque de código, para poder copiarlo. Nada antes ni después: sin explicaciones ni saludos.
 - No incluyas <html>, <head>, <body>, <style>, <script>, atributos style, JavaScript, ni clases distintas de las indicadas.
 - Usa caracteres UTF-8 reales: acentos (á, é, ñ), signos (¿, ¡) y comillas tal como aparecen en el original.
 
@@ -116,7 +124,7 @@ async function peticion(ruta,opts){
   const headers=Object.assign({apikey:KEY},opts.cabeceras||{});
   if(auth==="user"){await asegurarSesion();headers.Authorization="Bearer "+sesion.access_token;}
   else headers.Authorization="Bearer "+KEY;
-  const ctl=new AbortController(), tmo=setTimeout(()=>ctl.abort(),30000);
+  const ctl=new AbortController(), tmo=setTimeout(()=>ctl.abort(),opts.cuerpo instanceof Blob?600000:30000);
   let r;
   try{
     r=await fetch(BASE+ruta,{method:opts.metodo||"GET",headers,body:opts.cuerpo,signal:ctl.signal});
@@ -170,7 +178,7 @@ function refrescar(){
         const d=await peticion("/auth/v1/token?grant_type=refresh_token",{metodo:"POST",cuerpo:JSON.stringify({refresh_token:sesion.refresh_token}),cabeceras:{"Content-Type":"application/json"}});
         guardaSesion(d);
       }catch(e){
-        if(e.tipo==="http"){salirLocal("Tu sesión caducó. Vuelve a entrar.");throw {tipo:"sesion"};}
+        if(e.tipo==="http"&&[400,401,403].includes(e.status)){salirLocal("Tu sesión caducó. Vuelve a entrar.");throw {tipo:"sesion"};}
         throw e;
       }finally{refrescando=null;}
     })();
@@ -238,7 +246,7 @@ function nombreBase(src){
   return s;
 }
 function nombreValido(n){
-  return /^[^\\/\u0000-\u001f]{1,180}$/.test(n)&&!n.startsWith(".")&&n.toLowerCase()!=="thumb.png";
+  return /^[A-Za-z0-9 _.()-]{1,180}$/.test(n)&&!n.startsWith(".")&&n.toLowerCase()!=="thumb.png";
 }
 function urlPublica(slug,nombre){
   return `${BASE}/storage/v1/object/public/textos/${encodeURIComponent(slug)}/${encodeURIComponent(nombre)}`;
@@ -298,13 +306,18 @@ function refrescaUrlsVista(){
 fPdf.addEventListener("change",()=>{
   const f=fPdf.files[0]||null;
   pdfSel=f;
-  if(f&&f.type!=="application/pdf"){aviso(fPdfInfo,"Ese archivo no es un PDF.","error");pdfSel=null;fPdf.value="";return;}
+  if(f&&f.type!=="application/pdf"&&!/\.pdf$/i.test(f.name)){aviso(fPdfInfo,"Ese archivo no es un PDF.","error");pdfSel=null;fPdf.value="";return;}
   if(f&&f.size>MAX_ARCHIVO){aviso(fPdfInfo,"El PDF supera 50 MB.","error");pdfSel=null;fPdf.value="";return;}
   aviso(fPdfInfo,f?`${f.name} (${Math.round(f.size/1024)} KB)`:"","ok");
   analizarDiferido();
 });
 fImgs.addEventListener("change",()=>{
-  const lista=[...fImgs.files], malos=[];
+  const todos=[...fImgs.files], malos=[];
+  /* si eligen el PDF aquí, va a su campo */
+  const pdf=todos.find(f=>/\.pdf$/i.test(f.name));
+  if(pdf){const dt=new DataTransfer();dt.items.add(pdf);fPdf.files=dt.files;fPdf.dispatchEvent(new Event("change"));if(pdfSel)mostrarToast("PDF colocado en el paso 1.");}
+  if(pdf&&todos.every(f=>/\.pdf$/i.test(f.name)))return;
+  const lista=todos.filter(f=>!/\.pdf$/i.test(f.name));
   imgsSel=lista.filter(f=>{
     const ok=TIPOS_IMG.includes(f.type)&&f.size<=MAX_ARCHIVO&&nombreValido(f.name);
     if(!ok)malos.push(f.name);
@@ -312,26 +325,30 @@ fImgs.addEventListener("change",()=>{
   });
   refrescaUrlsVista();
   let t=imgsSel.length?`${imgsSel.length} imagen(es): ${imgsSel.map(f=>f.name).join(", ")}`:"";
-  if(malos.length)t+=(t?". ":"")+`No se usarán (tipo, tamaño o nombre no válidos): ${malos.join(", ")}`;
+  if(malos.length)t+=(t?". ":"")+`No se usarán (tipo, tamaño o nombre con acentos o símbolos): ${malos.join(", ")}`;
   aviso(fImgsInfo,t,malos.length?"error":"ok");
   analizarDiferido();
 });
 
 /* ---- Validación y vista previa ---- */
 /* Devuelve {vacio, avisos[], limpio}. Los avisos no bloquean la publicación; solo piden confirmación. */
+/* la IA suele envolver el HTML: si hay bloques de código, solo cuenta lo de dentro */
+const sinVallas=s=>{
+  const t=String(s||""),b=[...t.matchAll(/^[ \t]*```[^\n]*\n([\s\S]*?)^[ \t]*```/gm)].map(m=>m[1]);
+  return (b.length?b.join("\n"):t.replace(/^[ \t]*```.*$/gm,"")).trim();
+};
 function analizar(crudo){
-  const txt=String(crudo||"").trim();
+  const txt=sinVallas(crudo);
   if(!txt)return {vacio:true,avisos:[],limpio:""};
   const lista=[];
-  if(/```/.test(txt))lista.push("El texto contiene bloques de código (triple comilla invertida). Pega solo el HTML.");
   if(/<\s*(html|head|body|style|script)[\s>]/i.test(txt))lista.push("Hay etiquetas no permitidas (html, head, body, style o script); se eliminarán.");
   if(txt.length>600000)lista.push("El HTML supera 600 000 caracteres.");
-  const limpio=DOMPurify.sanitize(txt,PURIFY_CFG).trim();
+  let limpio=DOMPurify.sanitize(txt,PURIFY_CFG).trim();
   const quit=[...new Set((DOMPurify.removed||[]).map(x=>{
     if(x.element)return x.element.nodeName.toLowerCase();
     if(x.attribute)return "atributo "+x.attribute.name;
     return "";
-  }).filter(n=>n&&!n.startsWith("#")))];
+  }).filter(n=>n&&n!=="body"&&!n.startsWith("#")))];
   if(quit.length)lista.push(`Se eliminarán elementos o atributos no permitidos: ${quit.slice(0,8).join(", ")}.`);
 
   const t=document.createElement("template");t.innerHTML=limpio;
@@ -341,7 +358,7 @@ function analizar(crudo){
   if(!c.querySelector("header p.autor"))lista.push('Falta <p class="autor"> dentro de <header>.');
   if(!c.querySelector("section.cuerpo"))lista.push('Falta <section class="cuerpo"> con los párrafos.');
 
-  const adjuntas=new Set(imgsSel.map(f=>f.name));
+  const adjuntas=new Set([...imgsSel.map(f=>f.name),...yaSubidas()]);
   const faltan=new Set();
   c.querySelectorAll("img").forEach(im=>{
     const src=(im.getAttribute("src")||"").trim();
@@ -349,7 +366,9 @@ function analizar(crudo){
     if(/^https?:\/\//i.test(src))return;
     const n=nombreBase(src);
     if(!adjuntas.has(n))faltan.add(n);
+    im.setAttribute("src",encodeURIComponent(n)); /* los archivos se suben sin carpeta */
   });
+  limpio=t.innerHTML;
   if(faltan.size)lista.push(`Imágenes sin adjuntar: ${[...faltan].join(", ")}. Adjunta el archivo con ese nombre o corrige el src.`);
 
   const refs=new Set([...c.querySelectorAll('sup a[href^="#nota-"]')].map(a=>a.getAttribute("href").slice(1)));
@@ -361,12 +380,20 @@ function analizar(crudo){
   return {vacio:false,avisos:lista,limpio};
 }
 
+/* al editar, las imágenes del texto guardado ya están en Storage */
+let editando=null;
+function yaSubidas(){
+  if(!editando||!editando.base_url)return [];
+  const t=document.createElement("template");t.innerHTML=editando.html||"";
+  return [...t.content.querySelectorAll("img[src]")].map(i=>nombreBase(i.getAttribute("src")));
+}
 function pintaVista(limpio){
   const t=document.createElement("template");t.innerHTML=limpio;
   t.content.querySelectorAll("img").forEach(im=>{
     const src=im.getAttribute("src")||"";
     if(/^https?:\/\//i.test(src))return;
-    const url=urlsVista.get(nombreBase(src));
+    const n=nombreBase(src);
+    const url=urlsVista.get(n)||(yaSubidas().includes(n)?editando.base_url+encodeURIComponent(n):null);
     if(url)im.setAttribute("src",url);
     else{im.removeAttribute("src");im.classList.add("falta");}
   });
@@ -406,7 +433,7 @@ promptTexto.value=PROMPT_IA;
 btnCopiar.addEventListener("click",async()=>{
   const det=$("det-prompt");
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    try{await navigator.clipboard.writeText(PROMPT_IA);mostrarToast("Prompt copiado. Pégalo en tu IA junto con el texto.");return;}
+    try{await navigator.clipboard.writeText(PROMPT_IA);mostrarToast("Prompt copiado. Pégalo en tu IA y adjunta el PDF.");return;}
     catch(e){/* cae al plan B */}
   }
   det.open=true;promptTexto.focus();promptTexto.select();
@@ -457,6 +484,31 @@ async function miniaturaPdf(file){
   pdf.destroy();
   return blob;
 }
+async function actualizarFila(d,limpio,st){
+  const fila={titulo:d.titulo,autor:d.autor,fecha:d.fecha,resumen:d.resumen,html:limpio,libro:d.libro};
+  const v="?v="+Date.now(); /* mismo nombre de archivo: evita la copia en caché */
+  if(st.urlPdf){fila.pdf_url=st.urlPdf+v;fila.thumb_url=st.urlThumb?st.urlThumb+v:null;}
+  const r=await peticion(`/rest/v1/textos?id=eq.${encodeURIComponent(editando.id)}`,{metodo:"PATCH",auth:"user",cuerpo:JSON.stringify(fila),
+    cabeceras:{"Content-Type":"application/json",Prefer:"return=representation"}});
+  if(!Array.isArray(r)||!r.length)throw new Error("el texto ya no existe o no tienes permiso");
+}
+async function editarTexto(t){
+  let f;
+  try{
+    const r=await peticion(`/rest/v1/textos?select=*&id=eq.${encodeURIComponent(t.id)}`,{auth:"user"});
+    f=r&&r[0];if(!f)throw new Error("ya no existe");
+  }catch(e){aviso(listaMsg,textoErr(e,"abrir el texto"),"error");return;}
+  if(publicando||((fHtml.value.trim()||fTitulo.value.trim())&&!confirm("Se descartará lo que hay en el formulario. ¿Continuar?")))return;
+  limpiarFormulario();
+  editando=f;slugManual=true;fSlug.readOnly=true;
+  fTitulo.value=f.titulo;fAutor.value=f.autor;fFecha.value=f.fecha;fSlug.value=f.slug;fHtml.value=f.html;
+  fResumen.value=f.resumen||"";fResumenCont.textContent=`${fResumen.value.length}/600`;
+  const l=f.libro;if(l){fC1.value=l.c1;fC2.value=l.c2;fAlto.value=l.h;fAncho.value=l.w;}
+  $("nuevo-titulo").textContent="Editar texto";btnPublicar.textContent="Guardar cambios";btnCancelar.hidden=false;
+  if(f.pdf_url)aviso(fPdfInfo,"Ya tiene PDF. Elige otro solo si quieres reemplazarlo.","info");
+  pintaLibro();pintaVistas();ejecutarAnalisis(false);
+  $("nuevo-titulo").scrollIntoView({behavior:"smooth"});
+}
 async function insertarFila(d,limpio,st){
   const fila={
     slug:d.slug,titulo:d.titulo,autor:d.autor,fecha:d.fecha,resumen:d.resumen,html:limpio,
@@ -505,7 +557,13 @@ async function publicar(){
     pubEstado={slug:d.slug,huella:hu,hecho:new Set(),urlPdf:null,urlThumb:null,fila:false};
   }
   const st=pubEstado;
-  if(!st.fila){
+  if(!editando&&st.intento&&!st.fila){ /* se perdió la respuesta: ¿la fila ya quedó guardada? */
+    try{
+      const r=await peticion(`/rest/v1/textos?select=titulo&slug=eq.${encodeURIComponent(d.slug)}`,{auth:"user"});
+      if(r&&r[0]&&r[0].titulo===d.titulo)st.fila=true;
+    }catch(e){}
+  }
+  if(!editando&&!st.fila){
     const libre=await comprobarSlug(d.slug);
     if(!libre){publicando=false;btnPublicar.disabled=false;return;}
   }
@@ -514,8 +572,8 @@ async function publicar(){
   const pasos=[];
   if(d.pdf){
     pasos.push({k:"pdf",label:`Subir PDF (${d.pdf.name})`,run:async()=>{
-      await subirArchivo(d.slug,d.pdf.name,d.pdf,"application/pdf");
-      st.urlPdf=urlPublica(d.slug,d.pdf.name);
+      await subirArchivo(d.slug,d.slug+".pdf",d.pdf,"application/pdf"); /* nombre seguro: Storage rechaza acentos */
+      st.urlPdf=urlPublica(d.slug,d.slug+".pdf");
     }});
   }
   d.imgs.forEach((f,i)=>{
@@ -525,14 +583,17 @@ async function publicar(){
   });
   if(d.pdf){
     pasos.push({k:"thumb",label:"Generar y subir miniatura de la página 1",run:async()=>{
-      const b=await miniaturaPdf(d.pdf);
+      let b;
+      try{b=await miniaturaPdf(d.pdf);}
+      catch(e){mostrarToast("No se pudo crear la portada del PDF; se usará el color del libro.");return;}
       await subirArchivo(d.slug,"thumb.png",b,"image/png");
       st.urlThumb=urlPublica(d.slug,"thumb.png");
     }});
   }
   pasos.push({k:"fila",label:"Guardar el texto en la base de datos",run:async()=>{
     if(st.fila)return;
-    await insertarFila(d,an.limpio,st);
+    if(editando)await actualizarFila(d,an.limpio,st);
+    else{st.intento=true;await insertarFila(d,an.limpio,st);}
     st.fila=true;
   }});
 
@@ -559,19 +620,24 @@ async function publicar(){
     return;
   }
   pubEstado=null;
+  const hecho=editando?"Cambios guardados.":"Texto publicado.";
   pubOk.replaceChildren();
-  pubOk.append("Texto publicado. ");
+  pubOk.append(hecho+" ");
   const enlace=el("a",null,"Ver el texto");enlace.href=`post.html?p=${encodeURIComponent(d.slug)}`;
   pubOk.append(enlace);
   pubOk.hidden=false;pubOk.dataset.tipo="ok";
   limpiarFormulario();
   cargarLista();
-  mostrarToast("Texto publicado.");
+  mostrarToast(hecho);
 }
 btnPublicar.addEventListener("click",()=>{publicar();});
+const btnCancelar=$("btn-cancelar");
+btnCancelar.addEventListener("click",()=>{if(!publicando){limpiarFormulario();aviso(pubMsg,"","");}});
 formTexto.addEventListener("submit",ev=>{ev.preventDefault();});
 
 function limpiarFormulario(){
+  editando=null;pubEstado=null;fSlug.readOnly=false;fSlug.removeAttribute("aria-invalid");
+  $("nuevo-titulo").textContent="Nuevo texto";btnCancelar.hidden=true;
   formTexto.reset();
   fFecha.value=fechaHoy();
   slugManual=false;
@@ -621,6 +687,7 @@ async function eliminarTexto(t){
   }catch(e){
     aviso(listaMsg,"El texto se eliminó, pero no se pudieron borrar algunos archivos. Bórralos en Storage → textos/"+t.slug+" o vuelve a intentarlo.","error");
   }
+  if(editando&&editando.id===t.id)limpiarFormulario();
   await cargarLista();
 }
 
@@ -648,7 +715,11 @@ function pintaLista(rows){
     const del=el("button","btn peligro","Eliminar");del.type="button";
     del.dataset.accion="eliminar";del.dataset.id=String(t.id);
     del.setAttribute("aria-label",`Eliminar «${t.titulo}»`);
-    acc.append(ver,tog,del);
+    const ed=el("button","btn sec","Editar");ed.type="button";
+    ed.dataset.accion="editar";ed.dataset.id=String(t.id);
+    ed.setAttribute("aria-label",`Editar «${t.titulo}»`);
+    ver.hidden=!t.publicado; /* un texto oculto no se puede abrir en el sitio */
+    acc.append(ver,ed,tog,del);
     li.append(info,acc);
     listaTextos.append(li);
   });
@@ -659,7 +730,7 @@ listaTextos.addEventListener("click",ev=>{
   const t=filas.get(b.dataset.id);
   if(!t)return;
   b.disabled=true;
-  const fin=b.dataset.accion==="eliminar"?eliminarTexto(t):cambiarVisibilidad(t);
+  const fin=({eliminar:eliminarTexto,editar:editarTexto}[b.dataset.accion]||cambiarVisibilidad)(t);
   Promise.resolve(fin).finally(()=>{b.disabled=false;});
 });
 
@@ -725,7 +796,7 @@ PALETAS.forEach(([a,b])=>{
 });
 [fC1,fC2,fAlto,fAncho,fTitulo].forEach(n=>n.addEventListener("input",pintaLibro));
 function pintaVistas(){
-  const hayHtml=/<header[\s>]/i.test(fHtml.value)&&/class=["']cuerpo["']/i.test(fHtml.value),hayPdf=!!pdfSel;
+  const hayHtml=/<header[\s>]/i.test(fHtml.value)&&/class=["']cuerpo["']/i.test(fHtml.value),hayPdf=!!pdfSel||!!(editando&&editando.pdf_url);
   const v=[["PDF original",hayPdf],["Hojas personalizadas",hayHtml],["Página web",hayHtml],["Versión animada",hayHtml]];
   vistasOk.replaceChildren(...v.map(([n,ok])=>el("span",ok?"si":"",(ok?"✓ ":"✗ ")+n)));
 }
