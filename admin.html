@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin.css?v=20261123u">
+<link rel="stylesheet" href="admin.css?v=20261123v">
 </head>
 <body>
 <header class="cab">
@@ -148,6 +148,14 @@
       </form>
     </section>
 
+    <section class="tarjeta" aria-labelledby="com-titulo">
+      <h2 id="com-titulo">Comentarios</h2>
+      <p class="ayuda">Tus respuestas aparecen como «Arturo Torres» con la palomita de verificado.</p>
+      <div class="acciones"><button type="button" id="btn-com" class="btn sec">Actualizar</button></div>
+      <p id="com-msg" class="aviso" role="status" hidden></p>
+      <ul id="lista-com" class="com-lista"></ul>
+    </section>
+
     <section class="tarjeta" aria-labelledby="lista-titulo">
       <h2 id="lista-titulo">Textos</h2>
       <p id="lista-msg" class="aviso" role="status" hidden></p>
@@ -163,7 +171,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="config.js?v=20261123u"></script>
-<script src="admin.js?v=20261123u"></script>
+<script src="config.js?v=20261123v"></script>
+<script src="admin.js?v=20261123v"></script>
 </body>
 </html>

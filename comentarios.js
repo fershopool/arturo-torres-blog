@@ -173,6 +173,13 @@ function tarjeta(c,nuevo,hilo){
   const fecha=el("time","cm-fecha",hace(c.creado));
   if(c.creado)fecha.setAttribute("datetime",String(c.creado));
   cab.append(nombre);
+  /* solo la base puede marcarlo (el público no tiene permiso) */
+  if(c.verificado===true){
+    li.classList.add("cm-autor");
+    const v=el("span","cm-verif","✓");v.setAttribute("role","img");v.setAttribute("aria-label","Autor verificado");v.title="Autor verificado";
+    const foto=el("img");foto.src="logo.jpg";foto.alt="";av.replaceChildren(foto);
+    cab.append(v,el("span","cm-chip","Autor"));
+  }
   if(!hilo&&c.estrellas!=null)cab.append(barraEstrellas(Number(c.estrellas)||0,"cm-estrellas-c"));
   cab.append(fecha);
   const bar=el("div","cm-acc");

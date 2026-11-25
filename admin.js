@@ -759,10 +759,60 @@ async function cargarLista(){
   }
 }
 
+/* ---- Comentarios: responder como autor verificado ---- */
+const AUTOR_RESPUESTA="Arturo Torres";
+const comMsg=$("com-msg"),listaCom=$("lista-com");
+$("btn-com").addEventListener("click",()=>cargarComentarios());
+function itemComentario(c){
+  const li=el("li","com"+(c.verificado?" com-autor":""));
+  const cab=el("div","com-cab");
+  cab.append(el("strong",null,c.seudonimo),el("span",null,(c.verificado?"✔ verificado · ":"")+new Date(c.creado).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"})+(c.parent_id?"":" · "+c.slug)));
+  li.append(cab,el("p",null,c.comentario));
+  return li;
+}
+function formResponder(c){
+  const f=el("form","com-form");
+  const t=el("textarea");t.rows=2;t.maxLength=1000;t.required=true;t.placeholder="Responder a "+c.seudonimo+"…";t.setAttribute("aria-label",t.placeholder);
+  const b=el("button","btn","Responder");b.type="submit";
+  f.append(t,b);
+  f.addEventListener("submit",async ev=>{
+    ev.preventDefault();
+    const texto=t.value.trim();if(!texto||b.disabled)return;
+    b.disabled=true;
+    try{
+      await peticion("/rest/v1/comentarios",{metodo:"POST",auth:"user",
+        cuerpo:JSON.stringify({slug:c.slug,parent_id:c.id,seudonimo:AUTOR_RESPUESTA,comentario:texto,verificado:true}),
+        cabeceras:{"Content-Type":"application/json",Prefer:"return=minimal"}});
+      mostrarToast("Respuesta publicada.");
+      t.value="";await cargarComentarios();
+    }catch(e){
+      aviso(comMsg,e&&e.status===400&&/verificado/.test(e.detalle||"")?"Falta ejecutar supabase/verificado.sql en Supabase.":textoErr(e,"publicar la respuesta"),"error");
+      b.disabled=false;
+    }
+  });
+  return f;
+}
+async function cargarComentarios(){
+  aviso(comMsg,"","");
+  /* no borrar respuestas a medio escribir de otros hilos */
+  const borradores=new Map([...listaCom.querySelectorAll("textarea")].filter(t=>t.value.trim()).map(t=>[t.getAttribute("aria-label"),t.value]));
+  try{
+    const rows=await peticion("/rest/v1/comentarios?select=*&order=creado.desc&limit=1000",{auth:"user"})||[];
+    const tops=rows.filter(r=>!r.parent_id);
+    listaCom.replaceChildren(...tops.map(c=>{
+      const li=itemComentario(c),ul=el("ul","com-resp");
+      rows.filter(r=>r.parent_id===c.id).reverse().forEach(r=>ul.append(itemComentario(r)));
+      const f=formResponder(c),t=f.querySelector("textarea");t.value=borradores.get(t.getAttribute("aria-label"))||"";
+      li.append(ul,f);return li;
+    }));
+    if(!tops.length)listaCom.append(el("li","vacio","Todavía no hay comentarios."));
+  }catch(e){listaCom.replaceChildren();aviso(comMsg,textoErr(e,"cargar los comentarios"),"error");}
+}
+
 /* ---- Arranque ---- */
 async function iniciarPanel(){
   fFecha.value=fechaHoy();
-  await cargarLista();
+  await Promise.all([cargarLista(),cargarComentarios()]);
 }
 async function arranque(){
   if(!CONFIGURADO){

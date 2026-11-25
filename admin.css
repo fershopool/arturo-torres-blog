@@ -142,3 +142,14 @@ input[type=range]{width:100%;min-height:44px}
 .vistas-ok span.si{color:var(--ok);border-color:#3fbf8a66;background:#3fbf8a14}
 .paso-t{font-weight:500;font-size:.95rem}
 fieldset.libro-ed{min-width:0}
+
+/* comentarios */
+.com-lista,.com-resp{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.com-lista>.com{border:1px solid var(--line);border-radius:12px;padding:14px}
+.com p{margin:6px 0 0;white-space:pre-line;overflow-wrap:anywhere}
+.com-cab{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
+.com-cab span{color:var(--muted);font-size:.82rem}
+.com-resp{margin:12px 0 0;padding-left:20px;border-left:2px solid var(--line)}
+.com-resp:empty{display:none}
+.com-autor>.com-cab span{color:#6cc4ff}
+.com-form{display:grid;gap:8px;margin-top:12px;justify-items:start}

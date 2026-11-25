@@ -14,11 +14,14 @@ alter table public.comentarios add constraint comentarios_estrellas_req
 
 create index if not exists comentarios_parent_idx on public.comentarios (parent_id);
 
+alter table public.comentarios add column if not exists verificado boolean not null default false;
+
 -- La respuesta debe ir a un comentario principal del mismo texto.
 drop policy if exists "comentarios: anon publica" on public.comentarios;
 create policy "comentarios: anon publica" on public.comentarios for insert to anon
   with check (
-    comentarios.parent_id is null
-    or exists (select 1 from public.comentarios p
-               where p.id = comentarios.parent_id and p.slug = comentarios.slug and p.parent_id is null)
+    comentarios.verificado = false
+    and (comentarios.parent_id is null
+      or exists (select 1 from public.comentarios p
+                 where p.id = comentarios.parent_id and p.slug = comentarios.slug and p.parent_id is null))
   );

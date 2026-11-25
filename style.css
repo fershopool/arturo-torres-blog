@@ -719,3 +719,9 @@ html.menu-open .menu-foot{opacity:1}
   #comentarios .cm-resp::before{width:calc(40px - var(--cx) - 3px);border-bottom-left-radius:10px}
   #comentarios .cm-card.cm-resp .cm-avatar{width:34px;height:34px}
 }
+
+/* respuesta verificada del autor */
+#comentarios .cm-verif{display:inline-grid;place-items:center;width:18px;height:18px;margin-left:-4px;border-radius:50%;background:#1d9bf0;color:#fff;font-size:.72rem;font-weight:700;line-height:1}
+#comentarios .cm-chip{padding:1px 8px;border-radius:999px;border:1px solid #1d9bf066;color:#8fd0ff;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
+#comentarios .cm-autor>.cm-col .cm-avatar{overflow:hidden;box-shadow:0 0 0 2px #1d9bf0}
+#comentarios .cm-autor>.cm-col .cm-avatar img{width:100%;height:100%;object-fit:cover}
