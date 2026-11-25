@@ -700,14 +700,22 @@ html.menu-open .menu-foot{opacity:1}
 /* títulos largos en las hojas: se separan por sílabas en vez de dejar una letra suelta */
 .libro-cols h2,.libro-cols h3{-webkit-hyphens:auto;hyphens:auto}
 
-/* comentarios en hilo */
-#comentarios .cm-card{row-gap:0}
+/* comentarios en hilo: respuestas sangradas y unidas al principal.
+   --cx = centro del avatar principal; --ind = sangría */
+#comentarios .cm-card{row-gap:0;--cx:22px;--ind:52px}
 #comentarios .cm-col{display:flex;flex-direction:column;align-items:center;gap:4px}
-#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-col::after,#comentarios .cm-resp:not(:last-child)>.cm-col::after{content:"";flex:1;width:2px;min-height:8px;margin-bottom:-2px;border-radius:2px;background:#ffffff2e}
-#comentarios .cm-resp-lista{grid-column:1/-1;margin:0;gap:0}
-#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-cuerpo{padding-bottom:12px}
-#comentarios .cm-card.cm-resp{padding:4px 0 0;background:none;border:0;border-radius:0}
-#comentarios .cm-resp:not(:last-child)>.cm-cuerpo{padding-bottom:12px}
-#comentarios .cm-card.cm-resp .cm-avatar{width:44px;height:44px;font-size:1.25rem}
-#comentarios .cm-slot{grid-column:1/-1}
-@media(max-width:420px){#comentarios .cm-card.cm-resp .cm-avatar{width:38px;height:38px;font-size:1.1rem}}
+#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-col::after{content:"";flex:1;width:2px;min-height:8px;background:#ffffff2e}
+#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-cuerpo{padding-bottom:6px}
+#comentarios .cm-resp-lista{grid-column:1/-1;margin:0;padding-left:var(--ind);gap:0}
+#comentarios .cm-card.cm-resp{position:relative;padding:12px 0 0;gap:10px;background:none;border:0;border-radius:0}
+#comentarios .cm-resp::before,#comentarios .cm-resp:not(:last-child)::after{content:"";position:absolute;top:0;left:calc(var(--cx) - 52px - 1px);border-left:2px solid #ffffff2e}
+#comentarios .cm-resp::before{width:calc(52px - var(--cx) - 4px);height:29px;border-bottom:2px solid #ffffff2e;border-bottom-left-radius:14px}
+#comentarios .cm-resp:not(:last-child)::after{bottom:0}
+#comentarios .cm-card.cm-resp .cm-avatar{width:34px;height:34px;font-size:1rem}
+#comentarios .cm-slot{grid-column:1/-1;padding-left:var(--ind)}
+@media(max-width:420px){
+  #comentarios .cm-card{--cx:19px;--ind:40px}
+  #comentarios .cm-resp::before,#comentarios .cm-resp:not(:last-child)::after{left:calc(var(--cx) - 40px - 1px)}
+  #comentarios .cm-resp::before{width:calc(40px - var(--cx) - 3px);border-bottom-left-radius:10px}
+  #comentarios .cm-card.cm-resp .cm-avatar{width:34px;height:34px}
+}
