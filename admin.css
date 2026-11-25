@@ -153,3 +153,14 @@ fieldset.libro-ed{min-width:0}
 .com-resp:empty{display:none}
 .com-autor>.com-cab span{color:#6cc4ff}
 .com-form{display:grid;gap:8px;margin-top:12px;justify-items:start}
+.com-texto{display:block;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line);font-family:"Cormorant Garamond",serif;font-weight:600;font-size:1.12rem;overflow-wrap:anywhere}
+span.com-texto{color:var(--muted)}
+
+/* desplegable de nuevo texto */
+.det-nuevo>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;cursor:pointer;list-style:none}
+.det-nuevo>summary::-webkit-details-marker{display:none}
+.det-nuevo>summary h1{margin:0}
+.det-nuevo>summary::after{content:"+";display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--campo-borde);font-size:1.5rem;transition:transform .25s ease}
+.det-nuevo[open]>summary::after{transform:rotate(45deg)}
+.det-nuevo[open]>summary{margin-bottom:18px}
+.det-nuevo>summary:focus-visible{outline:2px solid var(--red);outline-offset:4px;border-radius:10px}

@@ -514,6 +514,7 @@ async function editarTexto(t){
   if(publicando||((fHtml.value.trim()||fTitulo.value.trim())&&!confirm("Se descartará lo que hay en el formulario. ¿Continuar?")))return;
   f.imgs=f.base_url?await imagenesExistentes(f):[];
   limpiarFormulario();
+  $("det-nuevo").open=true;
   editando=f;slugManual=true;fSlug.readOnly=true;
   fTitulo.value=f.titulo;fAutor.value=f.autor;fFecha.value=f.fecha;fSlug.value=f.slug;fHtml.value=f.html;
   fResumen.value=f.resumen||"";fResumenCont.textContent=`${fResumen.value.length}/600`;
@@ -766,7 +767,7 @@ $("btn-com").addEventListener("click",()=>cargarComentarios());
 function itemComentario(c){
   const li=el("li","com"+(c.verificado?" com-autor":""));
   const cab=el("div","com-cab");
-  cab.append(el("strong",null,c.seudonimo),el("span",null,(c.verificado?"✔ verificado · ":"")+new Date(c.creado).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"})+(c.parent_id?"":" · "+c.slug)));
+  cab.append(el("strong",null,c.seudonimo),el("span",null,(c.verificado?"✔ verificado · ":"")+new Date(c.creado).toLocaleString("es-MX",{dateStyle:"medium",timeStyle:"short"})));
   li.append(cab,el("p",null,c.comentario));
   return li;
 }
@@ -797,12 +798,20 @@ async function cargarComentarios(){
   /* no borrar respuestas a medio escribir de otros hilos */
   const borradores=new Map([...listaCom.querySelectorAll("textarea")].filter(t=>t.value.trim()).map(t=>[t.getAttribute("aria-label"),t.value]));
   try{
-    const rows=await peticion("/rest/v1/comentarios?select=*&order=creado.desc&limit=1000",{auth:"user"})||[];
+    const [rows,textos]=await Promise.all([
+      peticion("/rest/v1/comentarios?select=*&order=creado.desc&limit=1000",{auth:"user"}).then(r=>r||[]),
+      peticion("/rest/v1/textos?select=slug,titulo",{auth:"user"}).catch(()=>[])
+    ]);
+    const titulos=new Map((textos||[]).map(t=>[t.slug,t.titulo]));
     const tops=rows.filter(r=>!r.parent_id);
     listaCom.replaceChildren(...tops.map(c=>{
       const li=itemComentario(c),ul=el("ul","com-resp");
       rows.filter(r=>r.parent_id===c.id).reverse().forEach(r=>ul.append(itemComentario(r)));
       const f=formResponder(c),t=f.querySelector("textarea");t.value=borradores.get(t.getAttribute("aria-label"))||"";
+      /* de qué escrito es el comentario */
+      const tit=titulos.get(c.slug),en=el(tit?"a":"span","com-texto",tit?`📖 ${tit}`:`Texto eliminado (${c.slug})`);
+      if(tit){en.href=`post.html?p=${encodeURIComponent(c.slug)}#comentarios`;en.target="_blank";en.rel="noopener";}
+      li.prepend(en);
       li.append(ul,f);return li;
     }));
     if(!tops.length)listaCom.append(el("li","vacio","Todavía no hay comentarios."));
