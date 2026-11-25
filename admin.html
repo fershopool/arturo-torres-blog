@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin.css?v=20261123f">
 </head>
 <body>
 <header class="cab">
@@ -68,6 +68,33 @@
           <textarea id="f-resumen" rows="3" maxlength="600" aria-describedby="f-resumen-cont"></textarea>
           <span id="f-resumen-cont" class="contador">0/600</span>
         </div>
+
+        <fieldset class="libro-ed">
+          <legend>Diseño del libro</legend>
+          <div class="libro-ed-grid">
+            <div class="libro-ed-prev" aria-hidden="true">
+              <div class="ed-spine" id="ed-spine"><span id="ed-spine-t">Título</span></div>
+              <div class="ed-cover" id="ed-cover"><span id="ed-cover-t">Título</span></div>
+            </div>
+            <div class="libro-ed-ctl">
+              <div class="ed-sw" id="ed-sw" role="group" aria-label="Combinaciones de color"></div>
+              <div class="rejilla">
+                <div class="campo"><label for="f-c1">Color principal</label><input id="f-c1" type="color" value="#8f1d33"></div>
+                <div class="campo"><label for="f-c2">Color claro</label><input id="f-c2" type="color" value="#b3283c"></div>
+                <div class="campo"><label for="f-alto">Alto del lomo</label><input id="f-alto" type="range" min="160" max="230" value="190"></div>
+                <div class="campo"><label for="f-ancho">Grosor del lomo</label><input id="f-ancho" type="range" min="40" max="72" value="54"></div>
+              </div>
+              <p class="ayuda">Si subes PDF, la portada es su página 1; si no, se usa este color.</p>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="campo">
+          <label for="f-arch">Importar archivo HTML (opcional)</label>
+          <input id="f-arch" type="file" accept=".html,.htm,text/html">
+          <span class="ayuda">Carga el HTML ya hecho por la IA en el cuadro de abajo, sin copiar y pegar.</span>
+        </div>
+        <div class="vistas-ok" id="vistas-ok" aria-live="polite"></div>
 
         <div class="rejilla">
           <div class="campo">
@@ -133,7 +160,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="config.js"></script>
-<script src="admin.js"></script>
+<script src="config.js?v=20261123f"></script>
+<script src="admin.js?v=20261123f"></script>
 </body>
 </html>

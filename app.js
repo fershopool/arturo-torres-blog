@@ -7,11 +7,13 @@ const staticP=fetch("posts.json").then(r=>{if(!r.ok)throw 0;return r.json();}).t
 /* textos subidos desde el admin: tabla public.textos (REST, clave anon de config.js) */
 const sbCfg=()=>{const c=window.SUPABASE||{};return {base:String(c.url||"").replace(/\/+$/,""),key:String(c.anonKey||"")};};
 const sbHeaders=c=>({apikey:c.key,Authorization:"Bearer "+c.key,Accept:"application/json"});
-const fromRow=r=>({slug:r.slug,title:r.titulo,date:r.fecha,summary:r.resumen||null,thumb:r.thumb_url||null,pdf:r.pdf_url||null,fromDb:true,htmlInline:r.html||"",base:r.base_url||null});
+const fromRow=r=>({slug:r.slug,title:r.titulo,date:r.fecha,summary:r.resumen||null,thumb:r.thumb_url||null,pdf:r.pdf_url||null,fromDb:true,htmlInline:r.html||"",base:r.base_url||null,libro:r.libro&&typeof r.libro==='object'?r.libro:null});
 const dbList=()=>{
   const c=sbCfg();if(!c.base||!c.key)return Promise.resolve([]);
-  return fetch(`${c.base}/rest/v1/textos?select=slug,titulo,autor,fecha,resumen,pdf_url,thumb_url&order=fecha.desc,creado.desc`,{headers:sbHeaders(c)})
-    .then(r=>{if(!r.ok)throw 0;return r.json();})
+  const q=cols=>fetch(`${c.base}/rest/v1/textos?select=${cols}&order=fecha.desc,creado.desc`,{headers:sbHeaders(c)}).then(r=>{if(!r.ok)throw 0;return r.json();});
+  const base="slug,titulo,autor,fecha,resumen,pdf_url,thumb_url";
+  /* "libro" puede no existir aún en la BD: se reintenta sin esa columna */
+  return q(base+",libro").catch(()=>q(base))
     .then(rows=>Array.isArray(rows)?rows.map(fromRow):[])
     .catch(()=>[]);
 };
@@ -145,7 +147,10 @@ if(document.body.dataset.page==="home"){
     const w=el("div",cls);w.setAttribute("aria-hidden","true");
     const img=p.thumb||p.image;
     if(img){const im=el("img");im.src=img;im.alt="";im.loading="lazy";im.decoding="async";w.append(im);}
-    else w.append(el("span","ph","AT"));
+    else{
+      const l=p.libro;if(l&&/^#[0-9a-f]{6}$/i.test(l.c1)&&/^#[0-9a-f]{6}$/i.test(l.c2))w.style.background=`linear-gradient(135deg,${l.c2},${l.c1})`;
+      w.append(el("span","ph","AT"));
+    }
     return w;
   };
   const spot=e=>{
@@ -217,11 +222,11 @@ if(document.body.dataset.page==="home"){
       info.replaceChildren(card);
     };
     l.forEach((p,i)=>{
-      const h=[...p.slug].reduce((x,c)=>(x*31+c.charCodeAt(0))>>>0,7),[c1,c2]=SPINES[h%SPINES.length];
+      const h=[...p.slug].reduce((x,c)=>(x*31+c.charCodeAt(0))>>>0,7),L=p.libro,hex=/^#[0-9a-f]{6}$/i,ok=L&&hex.test(L.c1)&&hex.test(L.c2),[c1,c2]=ok?[L.c1,L.c2]:SPINES[h%SPINES.length];
       const s=el("button","spine");s.type="button";s.setAttribute("aria-pressed","false");s.setAttribute("aria-controls","shelf-info");
       s.setAttribute("aria-label",`${p.title}, ${dateTxt(p.date)}, Arturo Torres`);
       s.style.setProperty("--c1",c1);s.style.setProperty("--c2",c2);
-      s.style.setProperty("--h",(176+h%48)+"px");s.style.setProperty("--w",(46+(h>>3)%18)+"px");
+      s.style.setProperty("--h",(L&&L.h>=160&&L.h<=230?L.h:176+h%48)+"px");s.style.setProperty("--w",(L&&L.w>=40&&L.w<=72?L.w:46+(h>>3)%18)+"px");
       s.append(el("span",null,p.title.split(":")[0].replace(/[“”"]/g,"")));
       s.addEventListener("click",()=>show(p,s));
       row.append(s);

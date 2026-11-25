@@ -119,3 +119,22 @@ input[aria-invalid="true"]{border-color:var(--danger)}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* diseño del libro e importación */
+.libro-ed{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 18px}
+.libro-ed legend{padding:0 8px;font-weight:600}
+.libro-ed-grid{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:720px){.libro-ed-grid{grid-template-columns:200px 1fr}}
+.libro-ed-prev{display:flex;align-items:flex-end;gap:14px;justify-content:center;min-height:240px}
+.ed-spine,.ed-cover{--c1:#8f1d33;--c2:#b3283c;display:flex;align-items:center;justify-content:center;color:#fff;font-family:"Cormorant Garamond",serif;overflow:hidden;box-shadow:0 10px 24px -10px #000}
+.ed-spine{width:var(--w,54px);height:var(--h,190px);border-radius:4px 6px 6px 4px;background:linear-gradient(90deg,var(--c1),var(--c2) 60%,var(--c1))}
+.ed-spine span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.95rem;max-height:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ed-cover{width:96px;height:132px;border-radius:4px 8px 8px 4px;background:linear-gradient(135deg,var(--c2),var(--c1));text-align:center;font-size:.9rem;padding:8px}
+.ed-sw{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.ed-sw button{width:34px;height:34px;border-radius:50%;border:2px solid #ffffff44;cursor:pointer}
+.ed-sw button[aria-pressed=true]{border-color:#fff}
+input[type=color]{width:100%;height:44px;padding:2px;border-radius:10px;background:var(--campo);border:1px solid var(--campo-borde)}
+input[type=range]{width:100%;min-height:44px}
+.vistas-ok{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.vistas-ok span{font-size:.85rem;padding:5px 12px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.vistas-ok span.si{color:var(--ok);border-color:#3fbf8a66;background:#3fbf8a14}

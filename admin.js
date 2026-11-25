@@ -418,7 +418,7 @@ function leerFormulario(){
   return {
     titulo:fTitulo.value.trim(), autor:fAutor.value.trim(), fecha:fFecha.value,
     resumen:fResumen.value.trim(), slug:fSlug.value.trim(), html:fHtml.value,
-    pdf:pdfSel, imgs:imgsSel.slice()
+    pdf:pdfSel, imgs:imgsSel.slice(), libro:leerLibro()
   };
 }
 function validarCampos(d){
@@ -435,7 +435,7 @@ function validarCampos(d){
 
 /* ---- Publicación ---- */
 function huella(d){
-  return JSON.stringify([d.titulo,d.autor,d.fecha,d.resumen,d.slug,d.html,d.pdf?d.pdf.name+d.pdf.size:"",d.imgs.map(f=>f.name+f.size)]);
+  return JSON.stringify([d.libro,d.titulo,d.autor,d.fecha,d.resumen,d.slug,d.html,d.pdf?d.pdf.name+d.pdf.size:"",d.imgs.map(f=>f.name+f.size)]);
 }
 async function subirArchivo(slug,nombre,cuerpo,tipo){
   await peticion(`/storage/v1/object/textos/${encodeURIComponent(slug)}/${encodeURIComponent(nombre)}`,{
@@ -462,10 +462,14 @@ async function insertarFila(d,limpio,st){
     slug:d.slug,titulo:d.titulo,autor:d.autor,fecha:d.fecha,resumen:d.resumen,html:limpio,
     pdf_url:st.urlPdf||null,thumb_url:st.urlThumb||null,
     base_url:`${BASE}/storage/v1/object/public/textos/${encodeURIComponent(d.slug)}/`,
-    publicado:true
+    publicado:true,libro:d.libro
   };
-  await peticion("/rest/v1/textos",{metodo:"POST",auth:"user",cuerpo:JSON.stringify(fila),
+  const envia=f=>peticion("/rest/v1/textos",{metodo:"POST",auth:"user",cuerpo:JSON.stringify(f),
     cabeceras:{"Content-Type":"application/json",Prefer:"return=minimal"}});
+  try{await envia(fila);}
+  catch(e){ /* sin la columna "libro" (falta ejecutar supabase/libro.sql): se guarda sin diseño */
+    if(e&&e.status===400){delete fila.libro;await envia(fila);mostrarToast("Guardado sin diseño: ejecuta supabase/libro.sql.");}else throw e;
+  }
 }
 
 function pintaProgreso(pasos){
@@ -574,6 +578,7 @@ function limpiarFormulario(){
   aviso(fSlugEstado,"","");aviso(fPdfInfo,"","");aviso(fImgsInfo,"","");
   pdfSel=null;imgsSel=[];refrescaUrlsVista();
   fResumenCont.textContent="0/600";
+  pintaLibro();pintaVistas();
   ejecutarAnalisis(false);
   progreso.replaceChildren();progreso.hidden=true;
   btnPublicar.textContent="Publicar";
@@ -700,4 +705,37 @@ async function arranque(){
 }
 fFecha.value=fechaHoy();
 arranque();
+
+/* ---- diseño del libro, importación y vistas disponibles ---- */
+const PALETAS=[["#8f1d33","#b3283c"],["#3b2a78","#5a3fb0"],["#14224f","#233a7a"],["#6b2147","#9a3566"],["#2a2f6b","#3f4aa0"],["#0f5c4d","#1f8f78"],["#8a5a12","#c58a2b"],["#2b2b33","#55556a"]];
+const fC1=$("f-c1"),fC2=$("f-c2"),fAlto=$("f-alto"),fAncho=$("f-ancho"),edSpine=$("ed-spine"),edCover=$("ed-cover"),edSw=$("ed-sw"),vistasOk=$("vistas-ok"),fArch=$("f-arch");
+function leerLibro(){return {c1:fC1.value,c2:fC2.value,h:+fAlto.value,w:+fAncho.value};}
+function pintaLibro(){
+  const l=leerLibro(),t=fTitulo.value.trim().split(":")[0].replace(/[“”"]/g,"")||"Título";
+  [edSpine,edCover].forEach(n=>{n.style.setProperty("--c1",l.c1);n.style.setProperty("--c2",l.c2);});
+  edSpine.style.setProperty("--h",l.h+"px");edSpine.style.setProperty("--w",l.w+"px");
+  $("ed-spine-t").textContent=t;$("ed-cover-t").textContent=fTitulo.value.trim()||"Título";
+  edSw.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.c1===l.c1&&b.dataset.c2===l.c2)));
+}
+PALETAS.forEach(([a,b])=>{
+  const x=el("button");x.type="button";x.dataset.c1=a;x.dataset.c2=b;x.setAttribute("aria-label","Combinación "+a);
+  x.style.background=`linear-gradient(135deg,${b},${a})`;
+  x.addEventListener("click",()=>{fC1.value=a;fC2.value=b;pintaLibro();});
+  edSw.append(x);
+});
+[fC1,fC2,fAlto,fAncho,fTitulo].forEach(n=>n.addEventListener("input",pintaLibro));
+function pintaVistas(){
+  const hayHtml=/<header[\s>]/i.test(fHtml.value)&&/class=["']cuerpo["']/i.test(fHtml.value),hayPdf=!!pdfSel;
+  const v=[["PDF original",hayPdf],["Hojas personalizadas",hayHtml],["Página web",hayHtml],["Versión animada",hayHtml]];
+  vistasOk.replaceChildren(...v.map(([n,ok])=>el("span",ok?"si":"",(ok?"✓ ":"✗ ")+n)));
+}
+fHtml.addEventListener("input",pintaVistas);fPdf.addEventListener("change",pintaVistas);
+fArch.addEventListener("change",async()=>{
+  const f=fArch.files[0];if(!f)return;
+  if(f.size>600000){mostrarToast("El HTML supera 600 KB.");fArch.value="";return;}
+  fHtml.value=await f.text();fHtml.dispatchEvent(new Event("input"));ejecutarAnalisis(true);
+  if(!fTitulo.value){const m=/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(fHtml.value);if(m){fTitulo.value=m[1].replace(/<[^>]+>/g,"").trim();fTitulo.dispatchEvent(new Event("input"));}}
+  if(!fAutor.value){const m=/class=["']autor["'][^>]*>([\s\S]*?)<\/p>/i.exec(fHtml.value);if(m)fAutor.value=m[1].replace(/<[^>]+>/g,"").trim();}
+});
+pintaLibro();pintaVistas();
 })();
