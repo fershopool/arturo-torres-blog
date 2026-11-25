@@ -291,17 +291,14 @@ article blockquote{border-left:3px solid var(--red);margin:1.5em 0;padding-left:
 .libro-vp[data-zone=next]{cursor:e-resize}
 .libro-vp::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:64px;margin-left:-32px;display:none;pointer-events:none;background:linear-gradient(90deg,transparent,#00000028 44%,#0000005c 50%,#00000028 56%,transparent)}
 .libro-vp::after{content:"";position:absolute;inset:0;opacity:0;pointer-events:none;background:linear-gradient(90deg,#0000,#0007 50%,#0000)}
-.libro-flip{position:absolute;inset:0;z-index:2;perspective:2400px;perspective-origin:50% 40%;pointer-events:none;visibility:hidden}
-.libro-flip.on{visibility:visible}
-.libro-half,.libro-strip,.libro-cast{position:absolute;top:0;bottom:0}
-.libro-half{overflow:hidden;background:var(--navy)}
-.libro-cast{background:linear-gradient(90deg,#000c,transparent 60%);opacity:0}
-.libro-cast.l{background:linear-gradient(270deg,#000c,transparent 60%)}
-.libro-strip{transform-origin:left center;transform-style:preserve-3d;will-change:transform}
-.libro-face{position:absolute;top:0;bottom:0;left:0;overflow:hidden;background:var(--navy);backface-visibility:hidden;-webkit-backface-visibility:hidden}
-.libro-face::after{content:"";position:absolute;inset:0;background:#000;opacity:var(--sh,0)}
-.libro-face.back{transform:rotateY(180deg)}
-.libro-flip .libro-cols{pointer-events:none}
+.libro-flip{position:absolute;inset:0;overflow:hidden;pointer-events:none;background:var(--navy)}
+.libro-hoja{position:absolute;top:0;bottom:0;left:0;overflow:hidden;background:var(--navy)}
+.libro-hoja.reverso{background:#182049}
+.libro-luz{position:absolute;inset:0;transform-origin:left;background:linear-gradient(90deg,#ffffff1f,#ffffff05 35%,#0000 60%,#ffffff17 86%,#0006)}
+.libro-sombra{position:absolute;top:0;bottom:0;left:0;width:56px;opacity:0}
+.libro-sombra.der{background:linear-gradient(90deg,#000b,#0000)}
+.libro-sombra.izq{background:linear-gradient(270deg,#0009,#0000)}
+.libro-vp::before{z-index:1}
 @keyframes turnShade{0%{opacity:0}35%{opacity:.85}100%{opacity:0}}
 .libro-head{position:absolute;top:14px;left:44px;right:44px;z-index:1;padding-bottom:7px;border-bottom:1px solid #ffffff17;text-align:center;color:var(--muted);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;pointer-events:none}
 .libro-head::before{content:attr(data-t)}
@@ -692,3 +689,25 @@ html.menu-open .menu-foot{opacity:1}
 }
 @media(min-width:760px){.menu-ov{display:none!important}}
 @media(prefers-reduced-motion:reduce){.mono{animation:none}.menu-ov,.menu-list li,.menu-foot,.burger span{transition:none}}
+
+/* libros de color claro: título oscuro */
+.spine.claro{color:#111}
+.spine.claro span{text-shadow:none;font-weight:600}
+.claro .ph{color:#111c}
+
+/* título del libro: franja sólida, siempre por encima de la animación */
+.libro-head{top:0;left:0;right:0;z-index:2;padding:15px 44px 9px;background:var(--navy);color:#f2eefc;font-weight:600}
+/* títulos largos en las hojas: se separan por sílabas en vez de dejar una letra suelta */
+.libro-cols h2,.libro-cols h3{-webkit-hyphens:auto;hyphens:auto}
+
+/* comentarios en hilo */
+#comentarios .cm-card{row-gap:0}
+#comentarios .cm-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-col::after,#comentarios .cm-resp:not(:last-child)>.cm-col::after{content:"";flex:1;width:2px;min-height:8px;margin-bottom:-2px;border-radius:2px;background:#ffffff2e}
+#comentarios .cm-resp-lista{grid-column:1/-1;margin:0;gap:0}
+#comentarios .cm-card:has(>.cm-resp-lista>li)>.cm-cuerpo{padding-bottom:12px}
+#comentarios .cm-card.cm-resp{padding:4px 0 0;background:none;border:0;border-radius:0}
+#comentarios .cm-resp:not(:last-child)>.cm-cuerpo{padding-bottom:12px}
+#comentarios .cm-card.cm-resp .cm-avatar{width:44px;height:44px;font-size:1.25rem}
+#comentarios .cm-slot{grid-column:1/-1}
+@media(max-width:420px){#comentarios .cm-card.cm-resp .cm-avatar{width:38px;height:38px;font-size:1.1rem}}

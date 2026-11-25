@@ -5,6 +5,15 @@ const wide=matchMedia("(min-width:1000px)");
 const staticP=fetch("posts.json").then(r=>{if(!r.ok)throw 0;return r.json();}).then(l=>Array.isArray(l)?l:[]).catch(()=>[]);
 
 /* textos subidos desde el admin: tabla public.textos (REST, clave anon de config.js) */
+/* una figura cuya imagen no existe se retira (y Anexos si queda vacío) */
+document.addEventListener("error",e=>{
+  const im=e.target;if(!im||im.tagName!=="IMG")return;
+  const f=im.closest("figure");if(!f)return;
+  const a=f.closest("#anexos");f.remove();
+  if(a&&!a.querySelector("figure"))a.remove();
+},true);
+/* color claro de libro: brillo percibido de ambos tonos (0-255) */
+const esClaro=(c1,c2)=>[c1,c2].reduce((t,c)=>{const n=parseInt(c.slice(1),16);return t+(.299*(n>>16)+.587*(n>>8&255)+.114*(n&255))/2;},0)>140;
 const sbCfg=()=>{const c=window.SUPABASE||{};return {base:String(c.url||"").replace(/\/+$/,""),key:String(c.anonKey||"")};};
 const sbHeaders=c=>({apikey:c.key,Authorization:"Bearer "+c.key,Accept:"application/json"});
 const fromRow=r=>({slug:r.slug,title:r.titulo,date:r.fecha,summary:r.resumen||null,thumb:r.thumb_url||null,pdf:r.pdf_url||null,fromDb:true,htmlInline:r.html||"",base:r.base_url||null,libro:r.libro&&typeof r.libro==='object'?r.libro:null});
@@ -148,7 +157,7 @@ if(document.body.dataset.page==="home"){
     const img=p.thumb||p.image;
     if(img){const im=el("img");im.src=img;im.alt="";im.loading="lazy";im.decoding="async";w.append(im);}
     else{
-      const l=p.libro;if(l&&/^#[0-9a-f]{6}$/i.test(l.c1)&&/^#[0-9a-f]{6}$/i.test(l.c2))w.style.background=`linear-gradient(135deg,${l.c2},${l.c1})`;
+      const l=p.libro;if(l&&/^#[0-9a-f]{6}$/i.test(l.c1)&&/^#[0-9a-f]{6}$/i.test(l.c2)){w.style.background=`linear-gradient(135deg,${l.c2},${l.c1})`;w.classList.toggle("claro",esClaro(l.c1,l.c2));}
       w.append(el("span","ph","AT"));
     }
     return w;
@@ -225,7 +234,7 @@ if(document.body.dataset.page==="home"){
       const h=[...p.slug].reduce((x,c)=>(x*31+c.charCodeAt(0))>>>0,7),L=p.libro,hex=/^#[0-9a-f]{6}$/i,ok=L&&hex.test(L.c1)&&hex.test(L.c2),[c1,c2]=ok?[L.c1,L.c2]:SPINES[h%SPINES.length];
       const s=el("button","spine");s.type="button";s.setAttribute("aria-pressed","false");s.setAttribute("aria-controls","shelf-info");
       s.setAttribute("aria-label",`${p.title}, ${dateTxt(p.date)}, Arturo Torres`);
-      s.style.setProperty("--c1",c1);s.style.setProperty("--c2",c2);
+      s.style.setProperty("--c1",c1);s.style.setProperty("--c2",c2);s.classList.toggle("claro",esClaro(c1,c2));
       s.style.setProperty("--h",(L&&L.h>=160&&L.h<=230?L.h:176+h%48)+"px");s.style.setProperty("--w",(L&&L.w>=40&&L.w<=72?L.w:46+(h>>3)%18)+"px");
       s.append(el("span",null,p.title.split(":")[0].replace(/[“”"]/g,"")));
       s.addEventListener("click",()=>show(p,s));
@@ -429,7 +438,7 @@ if(document.body.dataset.page==="home"){
 
     /* ---- modo Hojas: libro con columnas CSS ---- */
     /* sonido de papel: ruido filtrado sintetizado (sin archivos); silenciable y recordado */
-    let actx=null,soundOn=true;
+    let actx=null,soundOn=true,lastSrc=null;
     try{soundOn=localStorage.getItem("libroSonido")!=="0";}catch(e){}
     const pageSound=dir=>{
       if(!soundOn||reduce)return;
@@ -446,71 +455,56 @@ if(document.body.dataset.page==="home"){
         const pan=actx.createStereoPanner?actx.createStereoPanner():null;
         if(pan){pan.pan.setValueAtTime(dir>0?.35:-.35,t);pan.pan.linearRampToValueAtTime(dir>0?-.35:.35,t+.9);}
         src.connect(bp);bp.connect(g);g.connect(pan||actx.destination);if(pan)pan.connect(actx.destination);
-        src.start(t);src.stop(t+len);
+        try{if(lastSrc)lastSrc.stop();}catch(e){}
+        lastSrc=src;src.start(t);src.stop(t+len);
       }catch(e){}
     };
-    /* hoja que se voltea y se curva: tiras anidadas, cada una gira un poco más que la anterior */
+    /* hoja que se dobla sobre el lomo: la parte levantada muestra el reverso (la página siguiente)
+       y debajo aparece la nueva. Solo recortes y traslados: el texto nunca se parte ni se deforma. */
     let flipEnd=null;
-    const NS=8;
-    const buildFlip=()=>{
-      const {vp,cols}=book,W=vp.clientWidth,two=bookCps>1,H=two?W/2:W,R=two?W/2:0,sw=H/NS;
-      if(book.fc)book.fc.wrap.remove();
-      const mk=(parent,off,cls,w)=>{
-        const f=document.createElement("div");f.className=cls;
-        const c=cols.cloneNode(true);c.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id"));
-        c.style.cssText=`left:${-off}px;right:auto;width:${W}px;transition:none`;
-        f.append(c);parent.append(f);if(w)f.style.width=w+"px";return {f,c};
-      };
-      const wrap=document.createElement("div");wrap.className="libro-flip";wrap.setAttribute("aria-hidden","true");wrap.inert=true;
-      const box=(l,cls)=>{const d=document.createElement("div");d.className=cls;d.style.left=l+"px";d.style.width=H+"px";wrap.append(d);return d;};
-      const underR=mk(box(R,"libro-half"),R),castR=box(R,"libro-cast");
-      let underL=null,castL=null;
-      if(two){underL=mk(box(0,"libro-half"),0);castL=box(0,"libro-cast l");}
-      const strips=[];let par=wrap;
-      for(let k=0;k<NS;k++){
-        const s=document.createElement("div");s.className="libro-strip";
-        s.style.left=(k?sw:R)+"px";s.style.width=(sw+(k<NS-1?1:0))+"px";
-        const fr=mk(s,R+k*sw,"libro-face",sw+1),bk=mk(s,two?R-(k+1)*sw:0,"libro-face back",sw+1);
-        if(!two)bk.c.style.display="none";
-        par.append(s);par=s;strips.push({s,fr,bk});
-      }
-      vp.append(wrap);
-      book.fc={wrap,underR,underL,castR,castL,strips,key:W+"x"+bookCps};
-    };
     const bookFlip=(o,n)=>{
-      const {vp,cols}=book,two=bookCps>1;
-      if(!book.fc||book.fc.key!==vp.clientWidth+"x"+bookCps)buildFlip();
-      const fc=book.fc,A=Math.min(o,n),B=Math.max(o,n),fwd=n>o,T=s=>`translate3d(${-s*bookStep}px,0,0)`;
-      fc.strips.forEach(t=>{t.fr.c.style.transform=T(A);t.bk.c.style.transform=T(B);});
-      fc.underR.c.style.transform=T(B);if(fc.underL)fc.underL.c.style.transform=T(A);
-      const showR=fwd,showL=!fwd&&two;
-      /* opacity/display, nunca visibility: un hijo "visible" se vería aunque la capa esté oculta y duplicaría el texto */
-      fc.underR.f.style.opacity=showR?"1":"0";fc.castR.style.display=showR?"":"none";
-      if(fc.underL){fc.underL.f.style.opacity=showL?"1":"0";fc.castL.style.display=showL?"":"none";}
-      const dur=1100,t0=performance.now();let raf=0,ended=false;
-      const ease=p=>{const s=p*p*(3-2*p);return .5*s+.5*(p<.5?4*p*p*p:1-Math.pow(-2*p+2,3)/2);};
-      const frame=p=>{
-        const q=fwd?ease(p):1-ease(p),th=-180*q,sn=Math.sin(Math.PI*q),m=.2+.55*sn;
-        fc.strips.forEach((t,k)=>{
-          const r=k?th*m/(NS-1):th*(1-m);
-          t.s.style.transform=`rotateY(${r}deg)`;
-        });
-        let acc=0;
-        fc.strips.forEach((t,k)=>{
-          acc+=k?th*m/(NS-1):th*(1-m);
-          const sh=Math.abs(Math.sin(acc*Math.PI/180));
-          t.fr.f.style.setProperty("--sh",(sh*.5).toFixed(3));t.bk.f.style.setProperty("--sh",(sh*.5).toFixed(3));
-        });
-        const c=(.8*sn).toFixed(3);fc.castR.style.opacity=c;if(fc.castL)fc.castL.style.opacity=c;
-        fc.wrap.style.setProperty("--lift",(sn*14).toFixed(1)+"px");
+      const {vp,cols}=book,W=vp.clientWidth,two=bookCps>1,H=two?W/2:W,S=two?H:0;
+      const A=Math.min(o,n),B=Math.max(o,n),fwd=n>o;
+      const div=(cls,par)=>{const d=document.createElement("div");d.className=cls;par.append(d);return d;};
+      const wrap=div("libro-flip",vp);wrap.setAttribute("aria-hidden","true");wrap.inert=true;
+      /* capa con una copia de las columnas: muestra la franja [off, off+ancho] del pliego s */
+      const hoja=(s,off,w,cls)=>{
+        const d=div("libro-hoja "+(cls||""),wrap);d.style.width=w+"px";
+        if(s!=null){
+          const c=cols.cloneNode(true);c.querySelectorAll("[id]").forEach(e=>e.removeAttribute("id"));
+          c.style.cssText=`left:${-off}px;right:auto;width:${W}px;transition:none;transform:translate3d(${-s*bookStep}px,0,0)`;
+          d.append(c);
+        }
+        return d;
       };
-      const done=()=>{
-        if(ended)return;ended=true;cancelAnimationFrame(raf);if(flipEnd===done)flipEnd=null;
-        fc.wrap.classList.remove("on");
-        cols.style.transition="none";cols.style.transform=T(n);void cols.offsetWidth;cols.style.transition="";
+      if(two)hoja(A,0,H);                              /* izquierda anterior, fija */
+      hoja(B,S,H).style.left=S+"px";                   /* página nueva, debajo */
+      const front=hoja(A,S,H);front.style.left=S+"px"; /* anverso que aún no se levanta */
+      const bajo=div("libro-sombra der",wrap),borde=div("libro-sombra izq",wrap);
+      const back=hoja(two?B:null,0,H,"reverso"),luz=div("libro-luz",back);
+      const frame=q=>{
+        const lev=q*H,f=W-lev,x=f-lev; /* lev: ancho levantado; f: doblez; x: borde libre */
+        front.style.clipPath=`inset(0 ${lev}px 0 0)`;
+        back.style.transform=`translate3d(${x}px,0,0)`;
+        back.style.clipPath=`inset(0 ${H-lev}px 0 0)`;
+        luz.style.transform=`scaleX(${lev/H})`;
+        bajo.style.transform=`translate3d(${f}px,0,0)`;
+        borde.style.transform=`translate3d(${x-borde.offsetWidth}px,0,0)`;
+        const k=Math.min(1,Math.sin(Math.PI*q)*1.6).toFixed(3);
+        bajo.style.opacity=borde.style.opacity=luz.style.opacity=k;
       };
-      const tick=now=>{const p=Math.min(1,(now-t0)/dur);frame(p);if(p<1)raf=requestAnimationFrame(tick);else done();};
-      pageSound(fwd?1:-1);flipEnd=done;frame(0);fc.wrap.classList.add("on");raf=requestAnimationFrame(tick);setTimeout(done,dur+150);
+      const dur=900,ease=p=>-(Math.cos(Math.PI*p)-1)/2;
+      let raf=0,t0=null;
+      const done=()=>{clearTimeout(tm);cancelAnimationFrame(raf);if(flipEnd===done)flipEnd=null;wrap.remove();cols.style.transition="";};
+      const tick=now=>{
+        if(t0===null)t0=now;
+        const p=Math.min(1,(now-t0)/dur);frame(fwd?ease(p):1-ease(p));
+        if(p<1)raf=requestAnimationFrame(tick);else done();
+      };
+      /* el libro real ya queda en el destino, oculto bajo la animación */
+      cols.style.transition="none";cols.style.transform=`translate3d(${-n*bookStep}px,0,0)`;
+      frame(fwd?0:1);flipEnd=done;
+      const tm=setTimeout(done,dur+250);raf=requestAnimationFrame(tick);
     };
     const bookTo=(page,anim)=>{
       if(!book)return;
@@ -519,7 +513,7 @@ if(document.body.dataset.page==="home"){
       const old=Math.floor(bookPage/bookCps);
       bookPage=s*bookCps;
       if(flipEnd)flipEnd();
-      if(anim&&!reduce&&s!==old)bookFlip(old,s);
+      if(anim&&!reduce&&s!==old){pageSound(s>old?1:-1);bookFlip(old,s);}
       else book.cols.style.transform=`translate3d(${-s*bookStep}px,0,0)`;
       const p1=bookPage+1,p2=Math.min(bookN,bookPage+bookCps);
       book.foot[0].dataset.t=bookCps>1?String(p1):"";
@@ -535,8 +529,9 @@ if(document.body.dataset.page==="home"){
     const bookLayout=()=>{
       if(!book)return;
       const {vp,cols}=book;
-      if(flipEnd)flipEnd();if(book.fc){book.fc.wrap.remove();book.fc=null;}
-      cols.style.transform="none";
+      if(flipEnd)flipEnd();
+      /* sin transición al medir: si el texto aún se está deslizando, el conteo de páginas sale mal */
+      cols.style.transition="none";cols.style.transform="none";void cols.offsetWidth;
       const cs=getComputedStyle(cols);
       bookCps=Math.max(1,parseInt(cs.columnCount,10)||1);
       const G=parseFloat(cs.columnGap)||0,pad=parseFloat(cs.paddingLeft)||0;
@@ -545,6 +540,7 @@ if(document.body.dataset.page==="home"){
       /* columnas = hojas; el desbordamiento del vp cuenta las columnas */
       bookN=Math.max(1,Math.round((vp.scrollWidth-pad+G)/period));
       bookTo(bookPage,false);
+      void cols.offsetWidth;cols.style.transition="";
     };
     [prev,aPrev].forEach(b=>b.addEventListener("click",()=>bookTurn(-1)));
     [next,aNext].forEach(b=>b.addEventListener("click",()=>bookTurn(1)));
@@ -590,7 +586,9 @@ if(document.body.dataset.page==="home"){
       vp.append(head,cols,foot);
       /* las imágenes de anexos cambian el alto de las columnas: se cargan ya y se recalcula el libro */
       let relT=0;
-      cols.querySelectorAll("img").forEach(im=>{im.loading="eager";im.addEventListener("load",()=>{clearTimeout(relT);relT=setTimeout(()=>{if(book&&book.cols===cols)bookLayout();},120);},{once:true});});
+      const rel=()=>{clearTimeout(relT);relT=setTimeout(()=>{if(book&&book.cols===cols)bookLayout();},120);};
+      /* también al fallar: la figura se retira y cambia el número de páginas */
+      cols.querySelectorAll("img").forEach(im=>{im.loading="eager";im.addEventListener("load",rel,{once:true});im.addEventListener("error",rel,{once:true});});
       let sx=null;
       vp.addEventListener("pointerdown",e=>{if(e.pointerType!=="mouse")sx={x:e.clientX,y:e.clientY};});
       vp.addEventListener("pointerup",e=>{
@@ -708,7 +706,7 @@ if(document.body.dataset.page==="home"){
       if(m==="hojas"){
         bookLayout();
         /* controlador flotante solo mientras el libro esta en pantalla */
-        pillIo=new IntersectionObserver(es=>nav.classList.toggle("is-on",es[es.length-1].isIntersecting),{threshold:0});
+        pillIo=new IntersectionObserver(es=>nav.classList.toggle("is-on",es[es.length-1].isIntersecting),{rootMargin:"-35% 0px -35% 0px"}); /* se oculta al bajar a los comentarios */
         pillIo.observe(book.root);
         if(scroll)book.root.scrollIntoView({block:"center",behavior:reduce?"auto":"smooth"});
       }

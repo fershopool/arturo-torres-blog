@@ -160,47 +160,54 @@ function pintaResumen(){
   );
 }
 
-function tarjeta(c,nuevo,esResp){
-  const li=el("li","cm-card"+(nuevo?" cm-new":"")+(esResp?" cm-resp":""));
+/* hilo: las respuestas se suman abajo, unidas por una línea. La base admite un nivel,
+   así que responder a una respuesta también cuelga del comentario principal, con su @nombre. */
+function tarjeta(c,nuevo,hilo){
+  const li=el("li","cm-card"+(nuevo?" cm-new":"")+(hilo?" cm-resp":""));
+  const col=el("div","cm-col");
   const av=el("div","cm-avatar",inicial(c.seudonimo));av.setAttribute("aria-hidden","true");
+  col.append(av);
   const cuerpo=el("div","cm-cuerpo");
   const cab=el("div","cm-cabeza");
   const nombre=el("strong","cm-nombre",String(c.seudonimo||""));
   const fecha=el("time","cm-fecha",hace(c.creado));
   if(c.creado)fecha.setAttribute("datetime",String(c.creado));
   cab.append(nombre);
-  if(!esResp&&c.estrellas!=null)cab.append(barraEstrellas(Number(c.estrellas)||0,"cm-estrellas-c"));
+  if(!hilo&&c.estrellas!=null)cab.append(barraEstrellas(Number(c.estrellas)||0,"cm-estrellas-c"));
   cab.append(fecha);
-  cuerpo.append(cab,el("p","cm-texto",String(c.comentario||"")));
-  if(!esResp){
-    const rs=el("ul","cm-resp-lista");
-    respuestasDe(c.id).forEach(r=>rs.append(tarjeta(r,false,true)));
-    const bar=el("div","cm-acc");
-    const bt=el("button","cm-link","Responder");bt.type="button";bt.setAttribute("aria-expanded","false");
-    bar.append(bt);
-    const slot=el("div","cm-slot");
-    bt.addEventListener("click",()=>{
-      if(slot.firstChild){slot.replaceChildren();bt.setAttribute("aria-expanded","false");return;}
-      slot.append(formRespuesta(c,rs,bt,slot));bt.setAttribute("aria-expanded","true");
-      slot.querySelector("textarea").focus();
-    });
-    cuerpo.append(bar,slot,rs);
+  const bar=el("div","cm-acc");
+  const bt=el("button","cm-link","Responder");bt.type="button";bt.setAttribute("aria-expanded","false");
+  bar.append(bt);
+  cuerpo.append(cab,el("p","cm-texto",String(c.comentario||"")),bar);
+  li.append(col,cuerpo);
+  const h=hilo||{raiz:c,rs:el("ul","cm-resp-lista"),slot:el("div","cm-slot"),abierto:null};
+  bt.addEventListener("click",()=>{
+    const cerrar=h.abierto===bt;
+    h.slot.replaceChildren();if(h.abierto)h.abierto.setAttribute("aria-expanded","false");h.abierto=null;
+    if(cerrar)return;
+    h.slot.append(formRespuesta(h,bt,hilo?"@"+String(c.seudonimo||"")+" ":""));
+    h.abierto=bt;bt.setAttribute("aria-expanded","true");
+    const t=h.slot.querySelector("textarea");t.focus();t.setSelectionRange(t.value.length,t.value.length);
+  });
+  if(!hilo){
+    respuestasDe(c.id).forEach(r=>h.rs.append(tarjeta(r,false,h)));
+    li.append(h.rs,h.slot);
   }
-  li.append(av,cuerpo);
   return li;
 }
 
-function formRespuesta(c,rs,bt,slot){
-  const f=el("form","cm-rform");f.setAttribute("aria-label","Responder a "+String(c.seudonimo||""));
+function formRespuesta(h,bt,previo){
+  const c=h.raiz,rs=h.rs,slot=h.slot;
+  const f=el("form","cm-rform");f.setAttribute("aria-label","Responder en el hilo de "+String(c.seudonimo||""));
   const n=el("input");n.type="text";n.required=true;n.maxLength=MAX_NOMBRE;n.placeholder="Tu seudónimo";n.value=ls.get(K_NOMBRE)||"";n.setAttribute("aria-label","Seudónimo");
-  const t=el("textarea");t.required=true;t.maxLength=MAX_TEXTO;t.rows=3;t.placeholder="Escribe tu respuesta…";t.setAttribute("aria-label","Tu respuesta");
+  const t=el("textarea");t.required=true;t.maxLength=MAX_TEXTO;t.rows=3;t.placeholder="Escribe tu respuesta…";t.value=previo;t.setAttribute("aria-label","Tu respuesta");
   const m=el("p","cm-msg");m.setAttribute("role","status");
   const b=el("button","cm-btn","Enviar respuesta");b.type="submit";
   f.append(n,t,m,b);
   f.addEventListener("submit",async ev=>{
     ev.preventDefault();
     const nombre=normNombre(n.value).slice(0,MAX_NOMBRE),texto=normTexto(t.value).slice(0,MAX_TEXTO);
-    if(!nombre||!texto){m.textContent="Escribe tu seudónimo y tu respuesta.";return;}
+    if(!nombre||!texto||texto===previo.trim()){m.textContent="Escribe tu seudónimo y tu respuesta.";return;}
     const falta=ESPERA_MS-(Date.now()-Number(ls.get(K_ENVIO)||0));
     if(falta>0){m.textContent=`Espera ${Math.ceil(falta/1000)} s antes de publicar otra.`;return;}
     ls.set(K_ENVIO,String(Date.now()));ls.set(K_NOMBRE,nombre);b.disabled=true;b.textContent="Enviando…";
@@ -208,8 +215,8 @@ function formRespuesta(c,rs,bt,slot){
       const data=await api("/rest/v1/comentarios",{method:"POST",headers:{"Content-Type":"application/json",Prefer:"return=representation"},
         body:JSON.stringify({slug,seudonimo:nombre,comentario:texto,parent_id:c.id})});
       const r=Array.isArray(data)?data[0]:data;
-      if(r&&r.comentario){rows.push(r);rs.append(tarjeta(r,true,true));}
-      slot.replaceChildren();bt.setAttribute("aria-expanded","false");bt.focus();
+      if(r&&r.comentario){rows.push(r);rs.append(tarjeta(r,true,h));}
+      slot.replaceChildren();h.abierto=null;bt.setAttribute("aria-expanded","false");bt.focus();
     }catch(e){ls.del(K_ENVIO);m.textContent=textoError(e,"publicar tu respuesta");b.disabled=false;b.textContent="Enviar respuesta";}
   });
   return f;

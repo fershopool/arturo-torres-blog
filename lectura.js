@@ -1,5 +1,13 @@
 (function () {
   'use strict';
+/* una figura cuya imagen no existe se retira (y Anexos si queda vacío) */
+document.addEventListener("error",e=>{
+  const im=e.target;if(!im||im.tagName!=="IMG")return;
+  const f=im.closest("figure");if(!f)return;
+  const a=f.closest("#anexos");f.remove();
+  if(a&&!a.querySelector("figure"))a.remove();
+},true);
+
 
   var root = document.documentElement;
   root.classList.add('js');

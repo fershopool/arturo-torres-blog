@@ -80,6 +80,15 @@ REGLAS DE CONTENIDO
 6. Fuentes: en la <ul> pon una <li> por cada referencia de la bibliografía, con el texto tal como aparece en el original.
 7. Anexos: una <figure> por cada imagen. En src escribe SOLO el nombre del archivo (por ejemplo ilustracion-2.png), sin carpetas ni URL. Si el autor indica nombres de archivo, úsalos; si no, usa ilustracion-1.png, ilustracion-2.png, etc., en orden de aparición. En alt describe brevemente la imagen. El <figcaption> es el pie exacto que el original da a la figura; si el original no tiene pie, omite el <figcaption>.
 8. Escapa como entidades los caracteres < > & que aparezcan como texto (&lt; &gt; &amp;).
+CITAS, BIBLIOGRAFÍA Y ANEXOS (no se puede perder ninguna)
+- Citas dentro del texto: consérvalas exactamente donde están y como están, por ejemplo (Autor, 1999, p. 15), comillas «», puntos suspensivos y corchetes [...]. No cambies el estilo de citación ni completes datos.
+- Citas largas (en bloque, con sangría o letra menor): ponlas dentro de <blockquote><p>texto exacto</p></blockquote> dentro de section class="cuerpo", en su lugar original, con su llamada de nota o referencia.
+- Cursivas y negritas del original (títulos de obras, extranjerismos, ibid.): usa <em> y <strong>, también en notas y bibliografía.
+- Bibliografía: todo apartado llamado Bibliografía, Referencias, Fuentes, Hemerografía o Páginas web va en <section id="fuentes">, con su título original en el <h2>. Si hay varios apartados, usa dentro de esa misma sección un <h3> por cada uno, seguido de su <ul>. Una <li> por referencia, completa, en el mismo orden, con puntuación, años, editoriales, páginas y fechas de consulta exactos.
+- Direcciones web: escríbelas completas como enlace <a href="URL">URL</a>.
+- Anexos: incluye en <section id="anexos"> todas las imágenes, con su pie y su fuente o crédito exactos dentro de <figcaption>. Los cuadros o tablas que no se puedan escribir como texto van como imagen. Si un anexo es solo texto, escríbelo en párrafos dentro de esa sección.
+- Antes de responder, comprueba sin mostrarlo que el número de notas, de referencias bibliográficas y de figuras coincide con el del PDF.
+
 9. Omite cualquier sección que el original no tenga. Por ejemplo, si no hay notas, no incluyas <ol class="notas">.
 10. Como última línea, escribe el comentario <!-- imagenes: nombre1.png, nombre2.png --> con los nombres de todas las imágenes de la sección de anexos. Si no hay imágenes, escribe <!-- imagenes: ninguna -->.`;
 
@@ -369,7 +378,7 @@ function analizar(crudo){
     im.setAttribute("src",encodeURIComponent(n)); /* los archivos se suben sin carpeta */
   });
   limpio=t.innerHTML;
-  if(faltan.size)lista.push(`Imágenes sin adjuntar: ${[...faltan].join(", ")}. Adjunta el archivo con ese nombre o corrige el src.`);
+  if(faltan.size)lista.push(`Imágenes sin adjuntar: ${[...faltan].join(", ")}. Adjunta la imagen en el paso 4 con ese mismo nombre, o borra su <figure> del HTML; si no, esa figura no se mostrará.`);
 
   const refs=new Set([...c.querySelectorAll('sup a[href^="#nota-"]')].map(a=>a.getAttribute("href").slice(1)));
   const notas=new Set([...c.querySelectorAll("ol.notas > li[id]")].map(li=>li.id));
@@ -382,10 +391,14 @@ function analizar(crudo){
 
 /* al editar, las imágenes del texto guardado ya están en Storage */
 let editando=null;
-function yaSubidas(){
-  if(!editando||!editando.base_url)return [];
-  const t=document.createElement("template");t.innerHTML=editando.html||"";
-  return [...t.content.querySelectorAll("img[src]")].map(i=>nombreBase(i.getAttribute("src")));
+function yaSubidas(){return editando&&editando.imgs||[];}
+async function imagenesExistentes(f){
+  const t=document.createElement("template");t.innerHTML=f.html||"";
+  const n=[...t.content.querySelectorAll("img[src]")].map(i=>nombreBase(i.getAttribute("src")));
+  const ok=await Promise.all(n.map(x=>new Promise(res=>{
+    const im=new Image();im.onload=()=>res(true);im.onerror=()=>res(false);im.src=f.base_url+encodeURIComponent(x);
+  })));
+  return n.filter((x,i)=>ok[i]);
 }
 function pintaVista(limpio){
   const t=document.createElement("template");t.innerHTML=limpio;
@@ -499,6 +512,7 @@ async function editarTexto(t){
     f=r&&r[0];if(!f)throw new Error("ya no existe");
   }catch(e){aviso(listaMsg,textoErr(e,"abrir el texto"),"error");return;}
   if(publicando||((fHtml.value.trim()||fTitulo.value.trim())&&!confirm("Se descartará lo que hay en el formulario. ¿Continuar?")))return;
+  f.imgs=f.base_url?await imagenesExistentes(f):[];
   limpiarFormulario();
   editando=f;slugManual=true;fSlug.readOnly=true;
   fTitulo.value=f.titulo;fAutor.value=f.autor;fFecha.value=f.fecha;fSlug.value=f.slug;fHtml.value=f.html;
@@ -784,6 +798,8 @@ function leerLibro(){return {c1:fC1.value,c2:fC2.value,h:+fAlto.value,w:+fAncho.
 function pintaLibro(){
   const l=leerLibro(),t=fTitulo.value.trim().split(":")[0].replace(/[“”"]/g,"")||"Título";
   [edSpine,edCover].forEach(n=>{n.style.setProperty("--c1",l.c1);n.style.setProperty("--c2",l.c2);});
+  const n=c=>{const v=parseInt(c.slice(1),16);return .299*(v>>16)+.587*(v>>8&255)+.114*(v&255);},claro=(n(l.c1)+n(l.c2))/2>140;
+  [edSpine,edCover].forEach(x=>x.style.color=claro?"#111":"#fff");
   edSpine.style.setProperty("--h",l.h+"px");edSpine.style.setProperty("--w",l.w+"px");
   $("ed-spine-t").textContent=t;$("ed-cover-t").textContent=fTitulo.value.trim()||"Título";
   edSw.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.c1===l.c1&&b.dataset.c2===l.c2)));

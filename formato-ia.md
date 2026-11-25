@@ -67,6 +67,15 @@ REGLAS DE CONTENIDO
 6. Fuentes: en la <ul> pon una <li> por cada referencia de la bibliografía, con el texto tal como aparece en el original.
 7. Anexos: una <figure> por cada imagen. En src escribe SOLO el nombre del archivo (por ejemplo ilustracion-2.png), sin carpetas ni URL. Si el autor indica nombres de archivo, úsalos; si no, usa ilustracion-1.png, ilustracion-2.png, etc., en orden de aparición. En alt describe brevemente la imagen. El <figcaption> es el pie exacto que el original da a la figura; si el original no tiene pie, omite el <figcaption>.
 8. Escapa como entidades los caracteres < > & que aparezcan como texto (&lt; &gt; &amp;).
+CITAS, BIBLIOGRAFÍA Y ANEXOS (no se puede perder ninguna)
+- Citas dentro del texto: consérvalas exactamente donde están y como están, por ejemplo (Autor, 1999, p. 15), comillas «», puntos suspensivos y corchetes [...]. No cambies el estilo de citación ni completes datos.
+- Citas largas (en bloque, con sangría o letra menor): ponlas dentro de <blockquote><p>texto exacto</p></blockquote> dentro de section class="cuerpo", en su lugar original, con su llamada de nota o referencia.
+- Cursivas y negritas del original (títulos de obras, extranjerismos, ibid.): usa <em> y <strong>, también en notas y bibliografía.
+- Bibliografía: todo apartado llamado Bibliografía, Referencias, Fuentes, Hemerografía o Páginas web va en <section id="fuentes">, con su título original en el <h2>. Si hay varios apartados, usa dentro de esa misma sección un <h3> por cada uno, seguido de su <ul>. Una <li> por referencia, completa, en el mismo orden, con puntuación, años, editoriales, páginas y fechas de consulta exactos.
+- Direcciones web: escríbelas completas como enlace <a href="URL">URL</a>.
+- Anexos: incluye en <section id="anexos"> todas las imágenes, con su pie y su fuente o crédito exactos dentro de <figcaption>. Los cuadros o tablas que no se puedan escribir como texto van como imagen. Si un anexo es solo texto, escríbelo en párrafos dentro de esa sección.
+- Antes de responder, comprueba sin mostrarlo que el número de notas, de referencias bibliográficas y de figuras coincide con el del PDF.
+
 9. Omite cualquier sección que el original no tenga. Por ejemplo, si no hay notas, no incluyas <ol class="notas">.
 10. Como última línea, escribe el comentario <!-- imagenes: nombre1.png, nombre2.png --> con los nombres de todas las imágenes de la sección de anexos. Si no hay imágenes, escribe <!-- imagenes: ninguna -->.
 ```
