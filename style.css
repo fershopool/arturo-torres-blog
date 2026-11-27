@@ -822,3 +822,12 @@ html.con-intro{overflow:hidden}
 .intro-carga .ic-b{animation-delay:1.1s}
 .intro-carga i{animation-delay:1.35s}
 .intro-carga{animation-delay:2.35s}
+/* ritmo breve: ~2 s en total */
+.intro-carga{animation-delay:1.55s;animation-duration:.5s}
+.intro-carga::before{animation-duration:2.05s}
+.intro-carga .ic-logo img{animation-delay:.05s;animation-duration:.5s}
+.intro-carga .ic-logo::after{animation-delay:.3s;animation-duration:.65s}
+.intro-carga .ic-a b{animation-delay:calc(.32s + var(--i)*.028s);animation-duration:.5s}
+.intro-carga .ic-x{animation-delay:.62s;animation-duration:.4s}
+.intro-carga .ic-b{animation-delay:.68s;animation-duration:.5s}
+.intro-carga i{animation-delay:.82s;animation-duration:.5s}
