@@ -13,9 +13,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261126f">
+<link rel="preload" as="image" href="tlatolli-mark.svg">
+<link rel="preload" as="image" href="tlatolli-palabra.svg">
+<link rel="stylesheet" href="style.css?v=20261126n">
 </head>
 <body data-page="home">
+<div class="intro-carga" id="intro-carga" aria-hidden="true">
+  <span class="ic-logo"><img src="tlatolli-mark.svg" alt="" width="150" height="150"></span>
+  <span class="ic-a" lang="nah"><b style="--i:0">T</b><b style="--i:1">l</b><b style="--i:2">a</b><b style="--i:3">m</b><b style="--i:4">a</b><b style="--i:5">t</b><b style="--i:6">i</b><b style="--i:7">n</b><b style="--i:8">i</b></span>
+  <span class="ic-x">×</span>
+  <img class="ic-b" src="tlatolli-palabra.svg" alt="">
+  <i></i>
+</div>
+<script>
+/* una vez por visita; se salta con un toque o una tecla. La portada espera y entra al cerrarse. */
+(function(){
+  var d=document.getElementById("intro-carga"),h=document.documentElement,t=[];
+  function suelta(){h.classList.remove("con-intro");}
+  function fin(){t.forEach(clearTimeout);suelta();d.remove();removeEventListener("keydown",fin);}
+  try{if(sessionStorage.getItem("intro"))return d.remove();sessionStorage.setItem("intro","1");}catch(e){}
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return d.remove();
+  h.classList.add("con-intro");
+  d.addEventListener("click",fin);addEventListener("keydown",fin);
+  d.addEventListener("animationend",function(e){if(e.target===d)fin();});
+  t.push(setTimeout(suelta,2350),setTimeout(fin,3800)); /* respaldo si no llega animationend */
+})();
+</script>
 <div class="ambient" aria-hidden="true"><span class="glow g1"></span><span class="glow g2"></span><span class="glow g3"></span></div>
 <a class="skip" href="#main">Saltar al contenido</a>
 
@@ -103,13 +126,26 @@
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="wrap foot">
-    <span class="mono" aria-hidden="true"><img src="logo.jpg" alt="" width="96" height="96"></span>
-    <p class="foot-name">Arturo Torres</p>
-    <p class="foot-tag">Ensayos sobre historia del arte</p>
-    <a class="foot-ig" href="https://www.instagram.com/arturoff_torres" target="_blank" rel="noopener" aria-label="Instagram de Arturo Torres" title="Instagram de Arturo Torres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg></a>
-    <p class="foot-copy">© <span id="year">2026</span> Arturo Torres</p>
+<footer class="site-footer pie">
+  <div class="wrap pie-in">
+    <div class="pie-autor">
+      <img class="pie-foto" src="logo.jpg" alt="" width="64" height="64" loading="lazy">
+      <p class="pie-nombre">Arturo Torres</p>
+      <p class="pie-tag">Ensayos sobre historia del arte</p>
+    </div>
+    <nav class="pie-nav" aria-label="Pie de página">
+      <a href="./#textos">Mi biblioteca</a>
+      <a href="./#como-leer">Cómo leer</a>
+      <a class="pie-ig" href="https://www.instagram.com/arturoff_torres" target="_blank" rel="noopener" aria-label="Instagram de Arturo Torres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span>Instagram</span></a>
+    </nav>
+    <div class="pie-tlatolli">
+      <a class="pie-marca" href="https://tlatolli.ollin.digital" target="_blank" rel="noopener" aria-label="Tlatolli, sitio web">
+        <img src="tlatolli-mark.svg" alt="" width="52" height="52" loading="lazy">
+        <span><small>Página hecha por</small><img class="pie-palabra" src="tlatolli-palabra.svg" alt="Tlatolli" width="120" height="18" loading="lazy"></span>
+      </a>
+      <a class="pie-contacto" href="https://tlatolli.ollin.digital/#contacto" target="_blank" rel="noopener">Contacto <span aria-hidden="true">→</span></a>
+    </div>
+    <p class="pie-copy">© <span id="year">2026</span> Arturo Torres</p>
   </div>
 </footer>
 <script src="config.js?v=20261123v"></script>
