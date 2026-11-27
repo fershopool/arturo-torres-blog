@@ -725,3 +725,37 @@ html.menu-open .menu-foot{opacity:1}
 #comentarios .cm-chip{padding:1px 8px;border-radius:999px;border:1px solid #1d9bf066;color:#8fd0ff;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase}
 #comentarios .cm-autor>.cm-col .cm-avatar{overflow:hidden;box-shadow:0 0 0 2px #1d9bf0}
 #comentarios .cm-autor>.cm-col .cm-avatar img{width:100%;height:100%;object-fit:cover}
+
+/* portada: Tlamatini como título, definición y formación, y debajo la presentación */
+.hero .hero-grid{grid-template-columns:minmax(0,1fr)}
+.hero .hero-copy{display:flex;flex-direction:column;align-items:center;text-align:center}
+.hero h1{max-width:none;margin-top:14px;padding:0 .1em .06em;font-style:italic;font-weight:600;font-size:clamp(3.6rem,15vw,8.5rem);line-height:1.05;background:linear-gradient(100deg,#ffd27a,#ff6b84 38%,#a77bff 68%,#ffd27a);background-size:240% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rise 1s var(--ease) .12s both,shine 9s linear infinite}
+.hero .nahuatl{width:100%;max-width:560px;animation:rise 1s var(--ease) .2s both}
+.hero .nahuatl .nah-sig{margin:6px 0 0;font-family:var(--serif);font-size:clamp(1.25rem,3.4vw,1.65rem);line-height:1.4;color:#f3eef9}
+.nah-sig em{color:#ffd27a}
+.nah-partes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:20px 0 0;border-block:1px solid #ffffff24}
+.nah-partes div{padding:12px 6px}
+.nah-partes div+div{position:relative;border-left:1px solid #ffffff24}
+.nah-partes div+div::before{content:"+";position:absolute;left:0;top:50%;transform:translate(-50%,-50%);width:22px;line-height:22px;border-radius:50%;background:#15102b;color:#ffd27a;font-size:.95rem}
+.nah-partes dt{font-family:var(--serif);font-style:italic;font-weight:600;font-size:1.6rem;line-height:1.2;color:#ffd27a}
+.nah-partes dd{margin:2px 0 0;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hero .hero-sub{margin:clamp(40px,7vw,60px) 0 0;max-width:20ch;font-size:clamp(1.9rem,5vw,3rem);line-height:1.15;animation:rise 1s var(--ease) .28s both}
+.hero .hero-sub em{font-weight:500;color:#ff8ba0}
+.hero .lede{margin-inline:auto}
+.hero .cta,.hero-facts{justify-content:center}
+@media(prefers-reduced-motion:reduce){.hero h1,.hero .nahuatl,.hero .hero-sub{animation:none}}
+@media(max-width:480px){
+  .hero .eyebrow{font-size:.66rem;letter-spacing:.16em}
+  .hero .eyebrow::before{display:none}
+  .nah-partes dd{font-size:.62rem;letter-spacing:.06em}
+}
+/* bloque Tlamatini más compacto */
+.hero h1#hero-title{font-size:clamp(3rem,11vw,5.6rem);margin-top:10px}
+.hero .nahuatl{max-width:420px}
+.hero .nahuatl .nah-sig{margin-top:2px;font-size:clamp(1.08rem,2.4vw,1.28rem)}
+.nah-partes{margin-top:12px}
+.nah-partes div{padding:7px 4px}
+.nah-partes dt{font-size:1.25rem}
+.nah-partes dd{font-size:.62rem}
+.nah-partes div+div::before{width:18px;line-height:18px;font-size:.82rem}
+.hero .hero-sub{margin-top:clamp(30px,5vw,42px)}
